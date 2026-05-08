@@ -216,54 +216,54 @@ function ReadingContent() {
 
           <AnimatePresence mode="popLayout">
             <div className="grid grid-cols-1 gap-10 md:gap-16">
-              {reading?.mind && (
+              {reading?.mind?.content && (
                 <MindEmotionCard
                   content={reading.mind.content}
                   mood={reading.mind.mood as any}
                 />
               )}
-              {reading?.relationship && (
+              {reading?.relationship?.content && (
                 <RelationshipHarmonyGauge
                   content={reading.relationship.content}
-                  level={reading.relationship.level}
+                  level={reading.relationship.level || 0}
                   mood={reading.relationship.mood as any}
                 />
               )}
-              {reading?.career && (
+              {reading?.career?.content && (
                 <CareerEnergyGauge
                   content={reading.career.content}
-                  level={reading.career.level}
+                  level={reading.career.level || 0}
                   mood={reading.career.mood as any}
                 />
               )}
-              {reading?.wealth && (
+              {reading?.wealth?.content && (
                 <WealthAbundanceCard
                   content={reading.wealth.content}
                   mood={reading.wealth.mood as any}
                 />
               )}
-              {reading?.health && (
+              {reading?.health?.content && (
                 <HealthVitalityCard
                   content={reading.health.content}
                   mood={reading.health.mood as any}
                 />
               )}
-              {reading?.lucky && (
+              {reading?.lucky?.reason && (
                 <LuckyElements
-                  color={reading.lucky.color}
-                  number={reading.lucky.number}
-                  direction={reading.lucky.direction}
+                  color={reading.lucky.color || ""}
+                  number={reading.lucky.number || ""}
+                  direction={reading.lucky.direction || ""}
                   reason={reading.lucky.reason}
                   mood={reading.lucky.mood as any}
                 />
               )}
-              {reading?.transit && (
+              {reading?.transit?.content && (
                 <TransitSummary
                   content={reading.transit.content}
                   mood={reading.transit.mood as any}
                 />
               )}
-              {reading?.oracle && (
+              {reading?.oracle?.content && (
                 <OracleAdvice
                   content={reading.oracle.content}
                   mood={reading.oracle.mood as any}

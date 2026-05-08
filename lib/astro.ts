@@ -11,7 +11,7 @@ export const calculateBirthStar = async (
     await swe.initSwissEph();
     
     // Set Lahiri Ayanamsa (SE_SIDM_LAHIRI is 1)
-    swe.set_sid_mode(1, 0, 0);
+    swe.set_sid_mode(swe.SE_SIDM_LAHIRI, 0, 0);
 
     // Convert to UTC
     const utcYear = date.getUTCFullYear();
@@ -19,19 +19,21 @@ export const calculateBirthStar = async (
     const utcDay = date.getUTCDate();
     const utcHour = date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
 
-    // Calculate Julian Day
-    const julianDay = swe.julday(utcYear, utcMonth, utcDay, utcHour, 1);
+    // Calculate Julian Day (Expected 4 arguments: year, month, day, hour)
+    const julianDay = swe.julday(utcYear, utcMonth, utcDay, utcHour);
 
     // Calculate Moon position in sidereal longitude
     // SEFLG_SIDEREAL (65536) | SEFLG_SPEED (256)
-    const SEFLG_SIDEREAL = 65536;
-    const result = swe.calc_ut(julianDay, swe.SE_MOON, SEFLG_SIDEREAL);
+    const SEFLG_SIDEREAL = swe.SEFLG_SIDEREAL;
+    const SEFLG_SWIEPH = swe.SEFLG_SWIEPH;
     
-    if (!result || result.error) {
-      throw new Error(result?.error || "Failed to calculate moon position");
+    // pos returns: [longitude, latitude, distance, speed]
+    const result = swe.calc_ut(julianDay, swe.SE_MOON, SEFLG_SWIEPH | SEFLG_SIDEREAL);
+    
+    if (!result || result.length < 1) {
+      throw new Error("Failed to calculate moon position");
     }
 
-    // calc_ut returns an array: [longitude, latitude, distance, speedLongitude, speedLatitude, speedDistance]
     const moonLongitude = result[0];
     const nakshatra = getNakshatraInfo(moonLongitude);
 
@@ -39,6 +41,9 @@ export const calculateBirthStar = async (
       moonLongitude,
       ...nakshatra
     };
+  } catch (error: any) {
+    console.error("SwissEph Calculation Error:", error);
+    throw error;
   } finally {
     swe.close();
   }
