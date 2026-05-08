@@ -1,0 +1,47 @@
+"use server";
+
+import { adminDb } from "@/lib/firebase-admin";
+import { calculateBirthStar } from "@/lib/astro";
+import { revalidatePath } from "next/cache";
+
+export async function saveUserOnboarding(formData: {
+  name: string;
+  birthDate: string;
+  birthTime: string;
+  city: string;
+  lat: number;
+  lng: number;
+  timezone: string;
+  uid?: string; // Should be passed from client or session
+}) {
+  try {
+    if (!formData.uid) throw new Error("User ID is required");
+
+    const birthDate = new Date(`${formData.birthDate}T${formData.birthTime}`);
+    
+    // Calculate Nakshatra
+    const astroInfo = await calculateBirthStar(birthDate, formData.lat, formData.lng);
+
+    const userData = {
+      uid: formData.uid,
+      full_name: formData.name,
+      birth_date: formData.birthDate,
+      birth_time: formData.birthTime,
+      birth_location: formData.city,
+      latitude: formData.lat,
+      longitude: formData.lng,
+      timezone: formData.timezone,
+      birth_star_nakshatra: astroInfo.name,
+      nakshatra_pada: astroInfo.pada,
+      updated_at: new Date().toISOString(),
+    };
+
+    await adminDb.collection("users").doc(formData.uid).set(userData, { merge: true });
+
+    revalidatePath("/dashboard");
+    return { success: true, nakshatra: astroInfo.name, pada: astroInfo.pada };
+  } catch (error: any) {
+    console.error("Onboarding Error:", error);
+    return { success: false, error: error.message };
+  }
+}

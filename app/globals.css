@@ -1,26 +1,75 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #FDFCFB; /* Premium Cream White */
+  --foreground: #2C1810; /* Deep Mahogany */
+  --accent: #C69C2C;     /* Burnished Gold */
+  --accent-foreground: #FDFCFB;
+  --muted: #F5E6CA;      /* Aged Parchment Light */
+  --muted-foreground: #8B5C45; /* Burned Clay */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  
+  --font-serif: var(--font-eczar);
+  --font-body: var(--font-spectral);
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+  font-family: var(--font-spectral), serif;
+}
+
+/* Subtle Sacred Geometry Pattern (Light Mode) */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(circle at 50% 50%, rgba(198, 156, 44, 0.05) 0%, transparent 70%);
+  background-size: 100% 100%;
+  pointer-events: none;
+  z-index: -1;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 0 L60 40 L100 50 L60 60 L50 100 L40 60 L0 50 L40 40 Z' fill='%23C69C2C' fill-opacity='0.03'/%3E%3C/svg%3E");
+  background-size: 80px 80px;
+  pointer-events: none;
+  opacity: 0.8;
+  z-index: -2;
+}
+
+h1, h2, h3, h4, .font-serif {
+  font-family: var(--font-eczar), serif;
+  letter-spacing: -0.02em; /* Eczar looks better with tighter spacing */
+}
+
+.vedic-glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(198, 156, 44, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(198, 156, 44, 0.1);
+}
+
+.saffron-glow {
+  box-shadow: 0 0 30px rgba(198, 156, 44, 0.1);
+}
+
+@layer base {
+  * {
+    @apply border-black/5;
+  }
 }
