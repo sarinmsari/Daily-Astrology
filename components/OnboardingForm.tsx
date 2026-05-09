@@ -117,7 +117,7 @@ export default function OnboardingForm() {
   };
 
   return (
-    <div className="w-full md:max-w-xl mx-auto p-10 rounded-[3rem] vedic-glass relative overflow-visible">
+    <div className="w-full md:max-w-xl mx-auto py-12 px-6 md:px-12 relative overflow-visible min-h-[600px] flex flex-col justify-center">
       <AnimatePresence mode="wait">
         {step === 1 && (
           <motion.div
@@ -201,7 +201,7 @@ export default function OnboardingForm() {
             <div className="grid grid-cols-1 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-accent/60 flex items-center gap-2 ml-4">
-                  <Calendar className="w-3 h-3" /> Earth Arrival
+                  <Calendar className="w-3 h-3" /> Date of Birth
                 </label>
                 <input
                   type="date"
@@ -214,7 +214,7 @@ export default function OnboardingForm() {
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-accent/60 flex items-center gap-2 ml-4">
-                  <Clock className="w-3 h-3" /> First Breath
+                  <Clock className="w-3 h-3" /> Time of Birth
                 </label>
                 <input
                   type="time"
@@ -343,7 +343,7 @@ export default function OnboardingForm() {
               initial={{ rotateY: 90 }}
               animate={{ rotateY: 0 }}
               transition={{ duration: 0.8, type: "spring" }}
-              className="p-10 bg-accent/10 rounded-[2.5rem] border-2 border-accent/20 relative group overflow-hidden"
+              className="p-12 bg-accent/5 rounded-[3rem] border border-accent/10 relative group overflow-hidden max-w-2xl mx-auto"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-accent/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <span className="text-[10px] uppercase tracking-[0.5em] font-black text-accent/60 mb-2 block">
