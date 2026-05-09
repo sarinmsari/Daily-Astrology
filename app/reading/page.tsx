@@ -140,9 +140,6 @@ function ReadingContent() {
         animate={{ opacity: 1, y: 0 }}
         className="space-y-16 md:space-y-24 relative"
       >
-        {/* Background Mandala-like Glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[100px] -z-10" />
-
         <header className="text-center space-y-6">
           <div className="space-y-2">
             <h1 className="text-4xl md:text-6xl font-serif font-black tracking-tighter text-accent leading-none">
