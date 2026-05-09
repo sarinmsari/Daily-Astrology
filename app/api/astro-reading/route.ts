@@ -72,7 +72,7 @@ export async function POST(req: Request) {
 
   const prompt = `
     You are an elite Vedic Astrologer (Jyotishi). 
-    Today is ${currentDate}.
+    Today is ${currentDate} (All calculations and transits are based on India Standard Time [IST]).
     
     User Context:
     - Name: ${name}

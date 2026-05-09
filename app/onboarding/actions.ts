@@ -17,7 +17,7 @@ export async function saveUserOnboarding(formData: {
   try {
     if (!formData.uid) throw new Error("User ID is required");
 
-    const birthDate = new Date(`${formData.birthDate}T${formData.birthTime}`);
+    const birthDate = new Date(`${formData.birthDate}T${formData.birthTime}:00+05:30`);
     
     // Calculate Nakshatra
     const astroInfo = await calculateBirthStar(birthDate, formData.lat, formData.lng);

@@ -79,6 +79,7 @@ function ReadingContent() {
           month: "long",
           year: "numeric",
           weekday: "long",
+          timeZone: "Asia/Kolkata",
         });
         const cacheKey = `reading-${nakshatra}-${pada}-${name}-${birthDate}-${language}-${today}`;
         localStorage.setItem(cacheKey, JSON.stringify(object));
@@ -95,6 +96,7 @@ function ReadingContent() {
         month: "long",
         year: "numeric",
         weekday: "long",
+        timeZone: "Asia/Kolkata",
       });
       const cacheKey = `reading-${nakshatra}-${pada}-${name}-${birthDate}-${language}-${today}`;
       const cached = localStorage.getItem(cacheKey);
@@ -155,6 +157,7 @@ function ReadingContent() {
                 month: "long",
                 year: "numeric",
                 weekday: "long",
+                timeZone: "Asia/Kolkata",
               })}
             </p>
           </div>
@@ -187,7 +190,13 @@ function ReadingContent() {
                       pada,
                       name,
                       birthDate,
-                      currentDate: new Date().toLocaleDateString(),
+                      currentDate: new Date().toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                        weekday: "long",
+                        timeZone: "Asia/Kolkata",
+                      }),
                     })
                   }
                   className="px-6 py-2 bg-accent/10 hover:bg-accent/20 text-accent rounded-full text-xs font-black tracking-widest transition-all"
