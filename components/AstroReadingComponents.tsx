@@ -251,7 +251,7 @@ export const LuckyElements = ({
   mood?: AstroMood;
 }) => (
   <SectionWrapper title="Lucky Vibrations" icon={Zap} mood={mood}>
-    <div className="grid grid-cols-3 gap-4 mb-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
       {[
         { label: "Color", value: color, icon: Palette },
         { label: "Number", value: number, icon: Hash },
@@ -284,7 +284,6 @@ export const TransitSummary = ({
 }) => (
   <SectionWrapper title="Cosmic Transit" icon={AlertCircle} mood={mood}>
     <div className="relative pl-6">
-      <div className="absolute left-0 top-0 bottom-0 w-1 bg-current opacity-20 rounded-full" />
       <p className="text-foreground/80 text-sm leading-relaxed font-medium italic">
         {content}
       </p>
