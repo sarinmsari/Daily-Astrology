@@ -25,6 +25,7 @@ export default function OnboardingForm() {
   });
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
 
@@ -62,6 +63,7 @@ export default function OnboardingForm() {
         console.error(err);
       } finally {
         setIsGeocoding(false);
+        setSelectedIndex(-1);
       }
     }, 500); // Wait 500ms after last keystroke
 
@@ -115,17 +117,7 @@ export default function OnboardingForm() {
   };
 
   return (
-    <div className="max-w-xl w-lg mx-auto mt-20 p-10 rounded-[3rem] vedic-glass relative overflow-visible">
-      <div className="flex justify-center mb-8">
-        <motion.div
-          animate={{ rotate: [0, 10, -10, 0] }}
-          transition={{ duration: 5, repeat: Infinity }}
-          className="w-20 h-20 rounded-full bg-accent/10 flex items-center justify-center border border-accent/20"
-        >
-          <Sparkles className="w-10 h-10 text-accent" />
-        </motion.div>
-      </div>
-
+    <div className="w-full md:max-w-xl mx-auto p-10 rounded-[3rem] vedic-glass relative overflow-visible">
       <AnimatePresence mode="wait">
         {step === 1 && (
           <motion.div
@@ -140,7 +132,7 @@ export default function OnboardingForm() {
                 Seeker's Call
               </h2>
               <p className="text-muted-foreground font-body text-sm">
-                Whisper your name.
+                Enter your name
               </p>
             </div>
             <div className="space-y-6">
@@ -155,7 +147,7 @@ export default function OnboardingForm() {
                   }
                 />
               </div>
-              
+
               <div className="space-y-3">
                 <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-accent/60 block text-center">
                   Preferred Tongue
@@ -164,12 +156,14 @@ export default function OnboardingForm() {
                   {["English", "Hindi", "Malayalam", "Tamil"].map((lang) => (
                     <button
                       key={lang}
-                      onClick={() => setFormData({ ...formData, language: lang })}
+                      onClick={() =>
+                        setFormData({ ...formData, language: lang })
+                      }
                       className={cn(
                         "py-3 rounded-xl text-xs font-serif font-bold transition-all border",
                         formData.language === lang
                           ? "bg-accent text-accent-foreground border-accent shadow-lg scale-[1.02]"
-                          : "bg-black/5 text-muted-foreground border-black/5 hover:bg-black/10"
+                          : "bg-black/5 text-muted-foreground border-black/5 hover:bg-black/10",
                       )}
                     >
                       {lang}
@@ -266,14 +260,41 @@ export default function OnboardingForm() {
                 className="w-full bg-black/5 border border-black/10 rounded-2xl pl-14 pr-6 py-4 outline-none focus:border-accent/40 focus:bg-black/10 transition-all font-body text-lg"
                 value={formData.city}
                 onChange={(e) => handleCitySearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (suggestions.length === 0) return;
+
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    setSelectedIndex((prev) =>
+                      prev < suggestions.length - 1 ? prev + 1 : prev,
+                    );
+                  } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+                  } else if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (selectedIndex >= 0) {
+                      selectCity(suggestions[selectedIndex]);
+                    }
+                  } else if (e.key === "Escape") {
+                    setSuggestions([]);
+                    setSelectedIndex(-1);
+                  }
+                }}
               />
               {suggestions.length > 0 && (
                 <div className="absolute w-full mt-4 bg-muted border border-accent/20 rounded-2xl overflow-hidden z-20 shadow-2xl backdrop-blur-2xl">
                   {suggestions.map((item, idx) => (
                     <button
                       key={idx}
-                      className="w-full text-left px-6 py-4 hover:bg-accent/10 transition-colors text-sm border-b border-white/5 last:border-none"
+                      className={cn(
+                        "w-full text-left px-6 py-4 transition-colors text-sm border-b border-white/5 last:border-none outline-none",
+                        selectedIndex === idx
+                          ? "bg-accent/20 text-accent font-bold"
+                          : "hover:bg-accent/10 text-muted-foreground",
+                      )}
                       onClick={() => selectCity(item)}
+                      onMouseEnter={() => setSelectedIndex(idx)}
                     >
                       {item.display_name}
                     </button>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, Suspense, useRef } from "react";
+import { useEffect, Suspense, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Moon, Sun, Stars, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -67,15 +67,48 @@ function ReadingContent() {
   const birthDate = searchParams.get("birthDate");
   const language = searchParams.get("language") || "English";
 
+  const [cachedReading, setCachedReading] = useState<any>(null);
+
   const { object, submit, isLoading } = useObject({
     api: "/api/astro-reading",
     schema: ReadingSchema,
+    onFinish: ({ object }) => {
+      if (object) {
+        const today = new Date().toLocaleDateString("en-IN", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+          weekday: "long",
+        });
+        const cacheKey = `reading-${nakshatra}-${pada}-${name}-${birthDate}-${language}-${today}`;
+        localStorage.setItem(cacheKey, JSON.stringify(object));
+      }
+    },
   });
 
   const hasSubmitted = useRef(false);
 
   useEffect(() => {
     if (nakshatra && pada && name && birthDate && !hasSubmitted.current) {
+      const today = new Date().toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        weekday: "long",
+      });
+      const cacheKey = `reading-${nakshatra}-${pada}-${name}-${birthDate}-${language}-${today}`;
+      const cached = localStorage.getItem(cacheKey);
+
+      if (cached) {
+        try {
+          setCachedReading(JSON.parse(cached));
+          hasSubmitted.current = true;
+          return;
+        } catch (e) {
+          console.error("Failed to parse cached reading", e);
+        }
+      }
+
       hasSubmitted.current = true;
       submit({
         nakshatra,
@@ -83,17 +116,12 @@ function ReadingContent() {
         name,
         birthDate,
         language,
-        currentDate: new Date().toLocaleDateString("en-IN", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-          weekday: "long",
-        }),
+        currentDate: today,
       });
     }
-  }, [nakshatra, pada, name, birthDate, submit]);
+  }, [nakshatra, pada, name, birthDate, language, submit]);
 
-  const reading = object;
+  const reading = cachedReading || object;
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-12">
@@ -114,29 +142,12 @@ function ReadingContent() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[100px] -z-10" />
 
         <header className="text-center space-y-6">
-          <div className="flex justify-center gap-4 mb-6 relative">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-              className="text-accent/20 absolute inset-0 flex items-center justify-center"
-            >
-              <div className="w-24 h-24 border border-current rounded-full opacity-50" />
-            </motion.div>
-            <motion.div
-              animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
-              transition={{ duration: 6, repeat: Infinity }}
-              className="text-accent relative z-10"
-            >
-              <Stars className="w-16 h-16 drop-shadow-[0_0_15px_rgba(234,190,83,0.4)]" />
-            </motion.div>
-          </div>
-
           <div className="space-y-2">
             <h1 className="text-4xl md:text-6xl font-serif font-black tracking-tighter text-accent leading-none">
               Cosmic Oracle
             </h1>
             <p className="font-body italic text-muted-foreground/60 text-lg">
-              Insights revealed for seeker {name}
+              Insights revealed for {name}
             </p>
             <p className="text-[10px] uppercase tracking-[0.4em] font-bold text-accent/40">
               {new Date().toLocaleDateString("en-IN", {
