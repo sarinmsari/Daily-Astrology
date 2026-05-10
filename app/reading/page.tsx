@@ -142,13 +142,20 @@ function ReadingContent() {
       >
         <header className="text-center space-y-6">
           <div className="space-y-2">
-            <h1 className="text-4xl md:text-6xl font-serif font-black tracking-tighter text-accent leading-none">
-              Cosmic Oracle
+            <h1 className="text-3xl font-serif font-black tracking-tighter text-accent leading-none">
+              Day Astrology Reading for{" "}
+              <span className="capitalize">{name}</span>
             </h1>
-            <p className="font-body italic text-muted-foreground/60 text-lg">
-              Insights revealed for {name}
-            </p>
             <p className="text-[10px] uppercase tracking-[0.4em] font-bold text-accent/40">
+              {language === "Malayalam"
+                ? nakshatra?.match(/\(([^)]+)\)/)?.[1] || nakshatra
+                : nakshatra}{" "}
+              • Pada {pada}
+            </p>
+          </div>
+
+          <div className="inline-flex items-center gap-3 px-8 py-3 vedic-glass rounded-full border border-accent/30 saffron-glow">
+            <span className="font-serif text-xs font-black tracking-[0.3em] text-accent">
               {new Date().toLocaleDateString("en-IN", {
                 day: "numeric",
                 month: "long",
@@ -156,16 +163,6 @@ function ReadingContent() {
                 weekday: "long",
                 timeZone: "Asia/Kolkata",
               })}
-            </p>
-          </div>
-
-          <div className="inline-flex items-center gap-3 px-8 py-3 vedic-glass rounded-full border border-accent/30 saffron-glow">
-            <div className="w-2 h-2 bg-accent rounded-full animate-pulse" />
-            <span className="font-serif text-xs font-black tracking-[0.3em] text-accent">
-              {language === "Malayalam"
-                ? nakshatra?.match(/\(([^)]+)\)/)?.[1] || nakshatra
-                : nakshatra}{" "}
-              • Pada {pada}
             </span>
           </div>
         </header>

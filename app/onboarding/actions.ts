@@ -12,15 +12,23 @@ export async function saveUserOnboarding(formData: {
   lat: number;
   lng: number;
   timezone: string;
-  uid?: string; // Should be passed from client or session
+  uid?: string;
+  nakshatra?: string; // Manually selected
+  pada?: number;      // Manually selected
 }) {
   try {
     if (!formData.uid) throw new Error("User ID is required");
 
-    const birthDate = new Date(`${formData.birthDate}T${formData.birthTime}:00+05:30`);
-    
-    // Calculate Nakshatra
-    const astroInfo = await calculateBirthStar(birthDate, formData.lat, formData.lng);
+    let finalNakshatra = formData.nakshatra;
+    let finalPada = formData.pada;
+
+    if (!finalNakshatra) {
+      const birthDate = new Date(`${formData.birthDate}T${formData.birthTime}:00+05:30`);
+      // Calculate Nakshatra
+      const astroInfo = await calculateBirthStar(birthDate, formData.lat, formData.lng);
+      finalNakshatra = astroInfo.name;
+      finalPada = astroInfo.pada;
+    }
 
     const userData = {
       uid: formData.uid,
@@ -31,15 +39,15 @@ export async function saveUserOnboarding(formData: {
       latitude: formData.lat,
       longitude: formData.lng,
       timezone: formData.timezone,
-      birth_star_nakshatra: astroInfo.name,
-      nakshatra_pada: astroInfo.pada,
+      birth_star_nakshatra: finalNakshatra,
+      nakshatra_pada: finalPada,
       updated_at: new Date().toISOString(),
     };
 
     await adminDb.collection("users").doc(formData.uid).set(userData, { merge: true });
 
     revalidatePath("/dashboard");
-    return { success: true, nakshatra: astroInfo.name, pada: astroInfo.pada };
+    return { success: true, nakshatra: finalNakshatra, pada: finalPada };
   } catch (error: any) {
     console.error("Onboarding Error:", error);
     return { success: false, error: error.message };
