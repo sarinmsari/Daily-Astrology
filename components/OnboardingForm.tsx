@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, MapPin, Calendar, Clock, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { NAKSHATRAS } from "@/lib/astro-constants";
+import { useAuth } from "@/context/AuthContext";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -13,6 +16,7 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export default function OnboardingForm() {
+  const { user, loginWithGoogle } = useAuth();
   const [step, setStep] = useState(1);
   const [flowMethod, setFlowMethod] = useState<"calculate" | "manual">(
     "calculate",
@@ -35,7 +39,34 @@ export default function OnboardingForm() {
   const [searchQuery, setSearchQuery] = useState("");
   const [nakshatraSearch, setNakshatraSearch] = useState("");
   const [nakshatraSelectedIndex, setNakshatraSelectedIndex] = useState(-1);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const router = useRouter();
+
+  // Check for existing profile and redirect
+  useEffect(() => {
+    if (user && step === 1) {
+      const checkProfile = async () => {
+        setIsRedirecting(true);
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            if (data.birth_star_nakshatra) {
+              router.push(
+                `/reading?nakshatra=${encodeURIComponent(data.birth_star_nakshatra)}&pada=${data.nakshatra_pada || 1}&name=${encodeURIComponent(data.full_name || user.displayName || "Soul")}&birthDate=${data.birth_date || ""}&language=${data.language || "English"}`,
+              );
+              return;
+            }
+          }
+        } catch (err) {
+          console.error("Error checking profile:", err);
+        } finally {
+          setIsRedirecting(false);
+        }
+      };
+      checkProfile();
+    }
+  }, [user, step, router]);
 
   // Debounced search logic
   useEffect(() => {
@@ -108,7 +139,7 @@ export default function OnboardingForm() {
 
       const res = await saveUserOnboarding({
         ...formData,
-        uid: "dummy-user-id-" + Math.random().toString(36).substring(7),
+        uid: user?.uid || "anonymous-" + Math.random().toString(36).substring(7),
         // If manual flow, ensure we pass the selected values
         nakshatra: flowMethod === "manual" ? formData.nakshatra : undefined,
         pada:
@@ -129,6 +160,22 @@ export default function OnboardingForm() {
       setIsSubmitting(false);
     }
   };
+
+  if (isRedirecting) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[600px] space-y-4">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        >
+          <Sparkles className="w-12 h-12 text-accent/40" />
+        </motion.div>
+        <p className="text-accent font-serif text-sm tracking-widest uppercase">
+          Aligning with your destiny...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full md:max-w-xl mx-auto py-12 px-6 md:px-12 relative overflow-visible min-h-[600px] flex flex-col justify-center">
@@ -186,6 +233,23 @@ export default function OnboardingForm() {
                 </div>
               </div>
             </div>
+
+            {!user && (
+              <div className="pt-4 border-t border-black/5">
+                <button
+                  onClick={loginWithGoogle}
+                  className="w-full bg-white border border-black/10 text-black font-body text-sm py-4 rounded-2xl flex items-center justify-center gap-3 hover:bg-black/5 transition-all"
+                >
+                  <img
+                    src="https://www.google.com/favicon.ico"
+                    className="w-4 h-4"
+                    alt="Google"
+                  />
+                  Sign in to save your readings
+                </button>
+              </div>
+            )}
+
             <button
               onClick={nextStep}
               disabled={!formData.name}

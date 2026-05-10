@@ -18,6 +18,8 @@ export const metadata: Metadata = {
   description: "Ancient Vedic wisdom meet modern AI intelligence.",
 };
 
+import { AuthProvider } from "@/context/AuthContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -28,7 +30,9 @@ export default function RootLayout({
       lang="en"
       className={`${eczar.variable} ${spectral.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-body">{children}</body>
+      <body className="min-h-full flex flex-col font-body">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

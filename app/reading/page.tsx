@@ -1,10 +1,19 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, Suspense, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Moon, Sun, Stars, ArrowLeft } from "lucide-react";
+import {
+  Sparkles,
+  Moon,
+  Sun,
+  Stars,
+  ArrowLeft,
+  LogIn,
+  LogOut,
+} from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 
 import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { z } from "zod";
@@ -60,6 +69,8 @@ const ReadingSchema = z.object({
 });
 
 function ReadingContent() {
+  const { user, loginWithGoogle, logout } = useAuth();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const nakshatra = searchParams.get("nakshatra");
   const pada = searchParams.get("pada");
@@ -123,17 +134,60 @@ function ReadingContent() {
     }
   }, [nakshatra, pada, name, birthDate, language, submit]);
 
+  useEffect(() => {
+    const syncWithUser = async () => {
+      if (user && nakshatra && name && birthDate) {
+        try {
+          const { saveUserOnboarding } =
+            await import("@/app/onboarding/actions");
+          await saveUserOnboarding({
+            name,
+            birthDate,
+            birthTime: "12:00", // Fallback if not in params
+            city: "Unknown", // Fallback
+            lat: 0,
+            lng: 0,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            uid: user.uid,
+            nakshatra,
+            pada: Number(pada) || 0,
+          });
+          console.log("Reading synced with authenticated profile");
+        } catch (e) {
+          console.error("Failed to sync reading with user", e);
+        }
+      }
+    };
+    syncWithUser();
+  }, [user, nakshatra, pada, name, birthDate]);
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/onboarding");
+  };
+
   const reading = cachedReading || object;
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-12">
-      <Link
-        href="/onboarding"
-        className="inline-flex items-center gap-2 text-muted-foreground/60 hover:text-accent mb-12 transition-all group font-serif text-xs tracking-widest"
-      >
-        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />{" "}
-        Back to Stars
-      </Link>
+      <div className="flex justify-between items-center mb-12">
+        {!user ? (
+          <Link
+            href="/onboarding"
+            className="inline-flex items-center gap-2 text-muted-foreground/60 hover:text-accent transition-all group font-serif text-xs tracking-widest"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />{" "}
+            Back
+          </Link>
+        ) : (
+          <button
+            onClick={handleLogout}
+            className="ml-auto inline-flex items-center gap-2 text-muted-foreground/60 hover:text-red-400 transition-all group font-serif text-xs tracking-widest cursor-pointer"
+          >
+            <LogOut className="w-4 h-4" /> Sign Out
+          </button>
+        )}
+      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -286,12 +340,37 @@ function ReadingContent() {
             </div>
           </AnimatePresence>
 
+          {!isLoading && !user && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-12 p-8 border border-accent/20 rounded-[2rem] bg-accent/5 text-center space-y-4"
+            >
+              <div className="space-y-2">
+                <h3 className="font-serif font-black text-accent text-lg">
+                  Save this journey?
+                </h3>
+                <p className="text-muted-foreground text-xs font-body">
+                  Sign in to associate this celestial reading with your profile
+                  and access it anytime.
+                </p>
+              </div>
+              <button
+                onClick={loginWithGoogle}
+                className="inline-flex items-center gap-3 px-8 py-3 bg-accent text-accent-foreground rounded-full cursor-pointer text-xs font-black tracking-widest transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <LogIn className="w-4 h-4" />
+                SignIn with google
+              </button>
+            </motion.div>
+          )}
+
           {!isLoading && (
             <motion.footer
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1 }}
-              className="pt-12 border-t border-black/5 flex justify-center gap-10 text-muted-foreground/40"
+              className="pt-12 border-t border-black/5 flex select-none justify-center gap-10 text-muted-foreground/40"
             >
               <div className="flex items-center gap-3">
                 <Sun className="w-5 h-5" />
