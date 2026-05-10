@@ -14,8 +14,19 @@ const spectral = Spectral({
 });
 
 export const metadata: Metadata = {
-  title: "AstroVeda | Your Daily Cosmic Guide",
-  description: "Ancient Vedic wisdom meet modern AI intelligence.",
+  title:
+    "DailyAstrology | Vedic Astrology & Personalized Daily Nakshatra Readings",
+  description:
+    "Unlock ancient Vedic wisdom with modern AI. Get your personalized daily Nakshatra reading, transit insights, and cosmic guidance tailored to your birth star.",
+  keywords: [
+    "Vedic Astrology",
+    "Nakshatra",
+    "Know my day",
+    "Daily Horoscope",
+    "Jyotish",
+    "AI Astrology",
+    "Birth Star",
+  ],
 };
 
 export default function RootLayout({
