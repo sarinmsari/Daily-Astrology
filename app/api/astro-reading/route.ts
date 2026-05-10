@@ -126,7 +126,7 @@ export async function POST(req: Request) {
   `;
 
   const result = streamObject({
-    model: google("gemini-3-pro-preview"),
+    model: google("gemini-3-flash-preview"),
     schema: ReadingSchema,
     prompt: prompt,
   });
