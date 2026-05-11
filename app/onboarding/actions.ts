@@ -44,6 +44,15 @@ export async function saveUserOnboarding(formData: {
       updated_at: new Date().toISOString(),
     };
 
+    const collectionName = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Kolkata',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+
+    await adminDb.collection(collectionName).doc(formData.uid).set(userData, { merge: true });
+    // Also keep a master record in "users" for easy lookup
     await adminDb.collection("users").doc(formData.uid).set(userData, { merge: true });
 
     revalidatePath("/dashboard");

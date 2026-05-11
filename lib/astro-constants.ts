@@ -9,6 +9,12 @@ export const NAKSHATRAS = [
   "Revati (Revathi)"
 ];
 
+export const RASHIS = [
+  "Mesha (Aries)", "Vrishabha (Taurus)", "Mithuna (Gemini)", "Karka (Cancer)",
+  "Simha (Leo)", "Kanya (Virgo)", "Tula (Libra)", "Vrischika (Scorpio)",
+  "Dhanu (Sagittarius)", "Makara (Capricorn)", "Kumbha (Aquarius)", "Meena (Pisces)"
+];
+
 export const getNakshatraInfo = (moonLongitude: number) => {
   // Each Nakshatra is 13 degrees 20 minutes (13.3333 degrees)
   const nakshatraIndex = Math.floor(moonLongitude / (13 + 20/60));

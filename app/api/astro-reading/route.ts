@@ -1,6 +1,7 @@
 import { google } from "@ai-sdk/google";
 import { streamObject } from "ai";
 import { z } from "zod";
+import { calculateFullChart } from "@/lib/astro";
 
 export const maxDuration = 30;
 
@@ -53,8 +54,17 @@ const ReadingSchema = z.object({
 });
 
 export async function POST(req: Request) {
-  const { nakshatra, pada, name, birthDate, currentDate, language } =
-    await req.json();
+  const {
+    nakshatra,
+    pada,
+    name,
+    birthDate,
+    birthTime,
+    latitude,
+    longitude,
+    currentDate,
+    language,
+  } = await req.json();
 
   // Calculate age for context
   const birth = new Date(birthDate);
@@ -70,38 +80,54 @@ export async function POST(req: Request) {
       ? nakshatra?.match(/\(([^)]+)\)/)?.[1] || nakshatra
       : nakshatra;
 
+  // Calculate Natal Chart
+  const birthDateTime = new Date(`${birthDate}T${birthTime || "12:00"}:00`);
+  const natalChart = await calculateFullChart(
+    birthDateTime,
+    latitude || 12.97,
+    longitude || 77.59
+  );
+
+  // Calculate Current Transit Chart (Delhi/India context for general transits if current location not provided)
+  const transitChart = await calculateFullChart(new Date(), 28.61, 77.2);
+
   const prompt = `
     You are an elite Vedic Astrologer (Jyotishi) with deep knowledge of the Vedas and planetary transits.
     Today is ${currentDate} (All calculations and transits are based on India Standard Time [IST]).
     
     User Context:
     - Name: ${name}
-    - Nakshatra: ${effectiveNakshatra}, Pada ${pada}
+    - Birth Nakshatra: ${effectiveNakshatra}, Pada ${pada}
     - Age: ${age} years old
     - Language: ${language}
+    
+    NATAL SIGNATURE:
+    - Ascendant (Lagna): ${natalChart.ascendant.rashi} at ${natalChart.ascendant.longitude.toFixed(2)}°
+    - Natal Planets:
+      ${natalChart.positions
+        .map((p) => `- ${p.name}: ${p.rashi} (${p.longitude.toFixed(2)}°)`)
+        .join("\n      ")}
+    
+    CURRENT CELESTIAL TRANSITS (GOCHARA):
+    - Current Positions:
+      ${transitChart.positions
+        .map((p) => `- ${p.name}: ${p.rashi} (${p.longitude.toFixed(2)}°)`)
+        .join("\n      ")}
     
     CRITICAL INSTRUCTION:
     Provide the ENTIRE reading in the ${language} language. All content fields must be written in ${language}.
     
     STYLE GUIDELINES:
-    1. Authoritative & Ancient: Speak as a seasoned Jyotishi, not an AI. Use terms like "soul," "alignment," "lunar tides," and "karmic flow."
-    2. Deeply Personal: Integrate the user's specific Nakshatra, Pada, and age-related life stage into the narrative of EACH category.
-    3. Connectable: While being authoritative, remain empathetic and practical. Bridge ancient wisdom with modern life.
+    1. Authoritative & Ancient: Speak as a seasoned Jyotishi. Use terms like "soul," "alignment," "lunar tides," and "karmic flow."
+    2. Deeply Personal: Integrate the user's specific Natal Signature and current Gochara into the narrative of EACH category.
+    3. Technical but Accessible: Reference how current planetary movements (e.g., Saturn in ${transitChart.positions.find((p) => p.name === "Saturn")?.rashi}) interact with the user's natal ${natalChart.positions.find((p) => p.name === "Moon")?.rashi} Moon or ${natalChart.ascendant.rashi} Lagna.
     4. Descriptive: Use rich, evocative language. Avoid generic sentences.
     
     FEW-SHOT EXAMPLES (Follow this style):
     
     Example 1 (Mind & Emotion):
-    - User Data: Rohini, Pada 2, Age 29
-    - Output: "As a Rohini soul in the vibrant threshold of your late twenties, your inner landscape today reflects the fertile soil of your birth star. The second pada grounding provides a steady anchor against the day's fluctuating lunar tides. You may feel a pull toward creative solitude—honor this, as your moon is seeking renewal through artistic expression."
-    
-    Example 2 (Career & Energy):
-    - User Data: Ashwini, Pada 1, Age 42
-    - Output: "With the swift, pioneering energy of Ashwini and the seasoned wisdom of your 42 years, today's solar alignment ignites a dormant ambition. Being in the first pada, your impulse is to lead from the front. A professional knot that has troubled you recently will find its resolution through a sudden, intuitive breakthrough. Move with the speed of the Ashwini Kumars, but keep your gaze steady."
-
-    Example 3 (Relationship Harmony):
-    - User Data: Magha, Pada 3, Age 35
-    - Output: "The regal energy of Magha flows through your connections today, but the third pada's influence suggests a need for deeper listening. At 35, you are entering a phase where legacy and lineage matter more. In your social interactions, seek the 'middle path'—let your natural authority shine through kindness rather than command."
+    - User Data: Rohini, Pada 2, Age 29, Natal Moon in Vrishabha, Transit Saturn in Kumbha (10th from Moon)
+    - Output: "As a Rohini soul with your natal Moon exalted in Vrishabha, you naturally possess emotional stability. However, with Saturn currently transiting your tenth house of karma, your mind may feel the weight of professional responsibility today. The second pada grounding provides a steady anchor. Do not let the shadow of Rahu's glance disturb your inner peace; focus on creative solitude."
     
     Areas to cover:
     1. Mind & Emotion: Inner state and psychological moon energy.
@@ -109,13 +135,13 @@ export async function POST(req: Request) {
     3. Wealth & Abundance: Financial flow and prosperity transits.
     4. Relationship Harmony: Love, connections, and social resonance. Include a 'level' (1-100) representing social harmony.
     5. Health & Vitality: Physical well-being and prana energy.
-    6. Transit Summary: A summary of the day's major Gochara impacts.
+    6. Transit Summary: A summary of the day's major Gochara impacts specifically for this user's chart.
     7. Oracle Advice: A final, powerful piece of guidance.
     
     Consider:
-    1. The Moon's current position relative to ${effectiveNakshatra}.
-    2. Major planetary transits (Saturn, Jupiter, Rahu/Ketu) and how they impact a ${age}-year-old individual at their current life stage.
-    3. The energy of the day (Tithi, Vara, Yoga, Karana).
+    1. The Moon's current position relative to natal Moon (Chandra Lagna).
+    2. Sade Sati or Dhaiya status if applicable (Saturn relative to Moon).
+    3. Major transits of Jupiter, Rahu/Ketu relative to the user's natal houses.
     
     Mood Definitions:
     - Mystical: Spiritual/Lunar depth.
