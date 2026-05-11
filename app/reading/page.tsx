@@ -61,7 +61,9 @@ const ReadingSchema = z.object({
 
 function ReadingContent() {
   const searchParams = useSearchParams();
+  const uid = searchParams.get("uid") || "";
   const nakshatra = searchParams.get("nakshatra");
+  const nakshatraIndex = searchParams.get("nakshatraIndex");
   const pada = searchParams.get("pada");
   const name = searchParams.get("name");
   const birthDate = searchParams.get("birthDate");
@@ -71,6 +73,8 @@ function ReadingContent() {
   const language = searchParams.get("language") || "English";
 
   const [cachedReading, setCachedReading] = useState<any>(null);
+  const [isComputingChart, setIsComputingChart] = useState(false);
+  const [chartError, setChartError] = useState<string | null>(null);
 
   const { object, submit, isLoading } = useObject({
     api: "/api/astro-reading",
@@ -115,19 +119,58 @@ function ReadingContent() {
       }
 
       hasSubmitted.current = true;
-      submit({
-        nakshatra,
-        pada,
-        name,
-        birthDate,
-        birthTime,
-        latitude: lat ? parseFloat(lat) : undefined,
-        longitude: lng ? parseFloat(lng) : undefined,
-        language,
-        currentDate: today,
+
+      // ── Step 1: Compute ephemeris data (Node.js, fast, < 5s) ─────────────────
+      const readingDateISO = new Date().toLocaleDateString("en-CA", {
+        timeZone: "Asia/Kolkata",
       });
+
+      setIsComputingChart(true);
+      setChartError(null);
+
+      const fetchChartAndSubmit = async () => {
+        try {
+          const chartRes = await fetch("/api/astro-chart", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              uid,          // ← used for Firestore natal chart lookup
+              birthDate,    // ← fallback if Firestore miss
+              birthTime,
+              latitude: lat ? parseFloat(lat) : undefined,
+              longitude: lng ? parseFloat(lng) : undefined,
+              nakshatraIndex: nakshatraIndex ? parseInt(nakshatraIndex) : 0,
+              readingDateISO,
+            }),
+          });
+
+          if (!chartRes.ok) throw new Error("Chart computation failed");
+          const chartData = await chartRes.json();
+
+          // ── Step 2: Stream LLM reading (Edge, up to 30s) ───────────────────
+          setIsComputingChart(false);
+          submit({
+            nakshatra,
+            pada,
+            name,
+            language,
+            currentDate: today,
+            // Pre-computed — Edge route uses these directly, no WASM needed
+            natalChart: chartData.natalChart,
+            transitChart: chartData.transitChart,
+            derived: chartData.derived,
+          });
+        } catch (err: any) {
+          setIsComputingChart(false);
+          setChartError(err.message || "Could not compute chart. Please try again.");
+          console.error("Chart fetch error:", err);
+        }
+      };
+
+      fetchChartAndSubmit();
     }
-  }, [nakshatra, pada, name, birthDate, birthTime, lat, lng, language, submit]);
+  }, [nakshatra, pada, name, birthDate, birthTime, lat, lng, language, nakshatraIndex, submit]);
+
 
   const reading = cachedReading || object;
 
@@ -174,39 +217,28 @@ function ReadingContent() {
         </header>
 
         <div className="space-y-12 md:space-y-20 relative">
-          {!isLoading && !reading && (
-            <div className="flex flex-col items-center justify-center space-y-4 py-12 border border-dashed border-accent/20 rounded-[2rem]">
-              <p className="text-muted-foreground font-body italic text-sm text-center">
-                The stars are quiet. <br />
-                {!nakshatra || !pada || !name || !birthDate
-                  ? "Celestial context is missing. Please return to the portal."
-                  : "Click below to channel the Oracle."}
-              </p>
-              {nakshatra && pada && name && birthDate && (
-                <button
-                  onClick={() =>
-                    submit({
-                      nakshatra,
-                      pada,
-                      name,
-                      birthDate,
-                      currentDate: new Date().toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                        weekday: "long",
-                        timeZone: "Asia/Kolkata",
-                      }),
-                    })
-                  }
-                  className="px-6 py-2 bg-accent/10 hover:bg-accent/20 text-accent rounded-full text-xs font-black tracking-widest transition-all"
-                >
-                  CHANNEL NOW
-                </button>
-              )}
+          {/* ── Phase 1 loader: computing ephemeris ───────────────────────── */}
+          {isComputingChart && !reading && (
+            <div className="flex flex-col items-center justify-center space-y-8 py-24">
+              <motion.div
+                animate={{ scale: [1, 1.15, 1], rotate: [0, 360] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                className="text-accent/40"
+              >
+                <Stars className="w-20 h-20" />
+              </motion.div>
+              <div className="text-center space-y-2">
+                <p className="text-accent text-sm font-serif font-black tracking-[0.5em] uppercase">
+                  Reading the Skies
+                </p>
+                <p className="text-muted-foreground/40 font-body text-xs italic">
+                  Calculating your natal &amp; transit chart...
+                </p>
+              </div>
             </div>
           )}
 
+          {/* ── Phase 2 loader: LLM streaming ─────────────────────────────── */}
           {isLoading && !reading && (
             <div className="flex flex-col items-center justify-center space-y-8 py-24">
               <motion.div
@@ -231,6 +263,27 @@ function ReadingContent() {
                   Consulting the ancient Akashic records...
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* ── Error state ───────────────────────────────────────────────── */}
+          {chartError && !reading && (
+            <div className="flex flex-col items-center justify-center space-y-4 py-12 border border-dashed border-red-400/30 rounded-[2rem]">
+              <p className="text-red-400/70 font-body italic text-sm text-center">
+                {chartError}
+              </p>
+            </div>
+          )}
+
+          {/* ── Idle state (no params) ────────────────────────────────────── */}
+          {!isComputingChart && !isLoading && !reading && !chartError && (
+            <div className="flex flex-col items-center justify-center space-y-4 py-12 border border-dashed border-accent/20 rounded-[2rem]">
+              <p className="text-muted-foreground font-body italic text-sm text-center">
+                The stars are quiet. <br />
+                {!nakshatra || !pada || !name || !birthDate
+                  ? "Celestial context is missing. Please return to the portal."
+                  : "Starting channel..."}
+              </p>
             </div>
           )}
 
