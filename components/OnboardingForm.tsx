@@ -93,6 +93,7 @@ export default function OnboardingForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [uid, setUid] = useState<string>("");
 
   const selectCity = (item: any) => {
     setFormData({
@@ -114,9 +115,10 @@ export default function OnboardingForm() {
       // Import the action dynamically to avoid issues with "use server" in client components
       const { saveUserOnboarding } = await import("@/app/onboarding/actions");
 
+      const generatedUid = "user-" + Math.random().toString(36).substring(2, 10);
       const res = await saveUserOnboarding({
         ...formData,
-        uid: "dummy-user-id-" + Math.random().toString(36).substring(7),
+        uid: generatedUid,
         // If manual flow, ensure we pass the selected values
         nakshatra: flowMethod === "manual" ? formData.nakshatra : undefined,
         pada:
@@ -126,6 +128,7 @@ export default function OnboardingForm() {
       });
 
       if (res.success) {
+        setUid(generatedUid);
         setResult(res);
         setStep(4);
       } else {
@@ -560,11 +563,11 @@ export default function OnboardingForm() {
             </motion.div>
 
             <button
-              onClick={() =>
+              onClick={() => {
                 router.push(
-                  `/reading?nakshatra=${encodeURIComponent(result.nakshatra)}&pada=${result.pada}&name=${encodeURIComponent(formData.name)}&birthDate=${formData.birthDate}&birthTime=${formData.birthTime}&lat=${formData.lat}&lng=${formData.lng}&language=${formData.language}`,
-                )
-              }
+                  `/reading?uid=${encodeURIComponent(uid)}&nakshatra=${encodeURIComponent(result.nakshatra)}&nakshatraIndex=${result.nakshatraIndex ?? 0}&pada=${result.pada}&name=${encodeURIComponent(formData.name)}&birthDate=${formData.birthDate}&birthTime=${formData.birthTime}&lat=${formData.lat}&lng=${formData.lng}&language=${formData.language}`,
+                );
+              }}
               className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-serif font-black py-5 rounded-2xl flex items-center justify-center gap-3 hover:scale-[1.02] transition-all group cursor-pointer"
             >
               How my day looks like?

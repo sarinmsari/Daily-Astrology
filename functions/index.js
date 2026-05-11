@@ -19,7 +19,7 @@ exports.dailyAstroReading = functions.pubsub
       const prompt = `Generate a 3-sentence personalized Vedic astrology reading for someone with ${userData.birth_star_nakshatra} Nakshatra, Pada ${userData.nakshatra_pada}. Focus on today's planetary transits and keep it mysterious and insightful.`;
       
       const { text } = await generateText({
-        model: google("gemini-3-flash-preview"),
+        model: google("gemini-2.5-flash"),
         prompt: prompt,
       });
 
