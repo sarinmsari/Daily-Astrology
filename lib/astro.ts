@@ -103,7 +103,7 @@ export const calculateFullChart = async (
     });
 
     // Houses/Lagna
-    const housesResult = swe.houses_ex(julianDay, flags, lat, lng, "P");
+    const housesResult = (swe as any).houses_ex(julianDay, flags, lat, lng, "P");
     const ascendant = housesResult.ascmc[0];
     const ascendantRashiIndex = Math.floor(ascendant / 30);
 
