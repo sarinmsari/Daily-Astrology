@@ -2,7 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, MapPin, Calendar, Clock, ArrowRight } from "lucide-react";
+import {
+  Sparkles,
+  MapPin,
+  Calendar,
+  Clock,
+  ArrowRight,
+  ArrowLeft,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { NAKSHATRAS } from "@/lib/astro-constants";
 import { clsx, type ClassValue } from "clsx";
@@ -98,6 +105,7 @@ export default function OnboardingForm() {
   };
 
   const nextStep = () => setStep(step + 1);
+  const prevStep = () => setStep(step - 1);
 
   const handleSubmit = async (e: React.FormEvent) => {
     setIsSubmitting(true);
@@ -204,11 +212,18 @@ export default function OnboardingForm() {
             exit={{ opacity: 0, x: -20 }}
             className="space-y-8"
           >
+            <button
+              onClick={prevStep}
+              className="inline-flex items-center gap-2 text-muted-foreground/60 hover:text-accent transition-all group font-serif text-xs tracking-widest mb-4 cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />{" "}
+              Back
+            </button>
             <div className="text-center space-y-2">
               <h2 className="text-3xl font-serif font-bold text-accent tracking-widest">
                 Birth Details
               </h2>
-              <div className="flex justify-center gap-4 mt-4">
+              {/* <div className="flex justify-center gap-4 mt-4">
                 <button
                   onClick={() => setFlowMethod("calculate")}
                   className={cn(
@@ -231,7 +246,7 @@ export default function OnboardingForm() {
                 >
                   I Know My Birth Star
                 </button>
-              </div>
+              </div> */}
             </div>
 
             {flowMethod === "calculate" ? (
@@ -419,6 +434,13 @@ export default function OnboardingForm() {
             exit={{ opacity: 0, x: -20 }}
             className="space-y-8"
           >
+            <button
+              onClick={prevStep}
+              className="inline-flex items-center gap-2 text-muted-foreground/60 hover:text-accent transition-all group font-serif text-xs tracking-widest mb-4 cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />{" "}
+              Back
+            </button>
             <div className="text-center space-y-2">
               <h2 className="text-3xl font-serif font-bold text-accent tracking-widest">
                 Birth Place
@@ -506,6 +528,13 @@ export default function OnboardingForm() {
             animate={{ opacity: 1, scale: 1 }}
             className="text-center space-y-10"
           >
+            <button
+              onClick={prevStep}
+              className="inline-flex items-center gap-2 text-muted-foreground/60 hover:text-accent transition-all cursor-pointer group font-serif text-xs tracking-widest mb-4"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />{" "}
+              Back
+            </button>
             <div className="space-y-3">
               <h2 className="text-3xl font-serif font-bold text-accent tracking-[0.2em]">
                 Birth Star
@@ -533,7 +562,7 @@ export default function OnboardingForm() {
             <button
               onClick={() =>
                 router.push(
-                  `/reading?nakshatra=${encodeURIComponent(result.nakshatra)}&pada=${result.pada}&name=${encodeURIComponent(formData.name)}&birthDate=${formData.birthDate}&language=${formData.language}`,
+                  `/reading?nakshatra=${encodeURIComponent(result.nakshatra)}&pada=${result.pada}&name=${encodeURIComponent(formData.name)}&birthDate=${formData.birthDate}&birthTime=${formData.birthTime}&lat=${formData.lat}&lng=${formData.lng}&language=${formData.language}`,
                 )
               }
               className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-serif font-black py-5 rounded-2xl flex items-center justify-center gap-3 hover:scale-[1.02] transition-all group cursor-pointer"

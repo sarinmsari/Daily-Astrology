@@ -65,6 +65,9 @@ function ReadingContent() {
   const pada = searchParams.get("pada");
   const name = searchParams.get("name");
   const birthDate = searchParams.get("birthDate");
+  const birthTime = searchParams.get("birthTime");
+  const lat = searchParams.get("lat");
+  const lng = searchParams.get("lng");
   const language = searchParams.get("language") || "English";
 
   const [cachedReading, setCachedReading] = useState<any>(null);
@@ -81,7 +84,7 @@ function ReadingContent() {
           weekday: "long",
           timeZone: "Asia/Kolkata",
         });
-        const cacheKey = `reading-${nakshatra}-${pada}-${name}-${birthDate}-${language}-${today}`;
+        const cacheKey = `reading-${nakshatra}-${pada}-${name}-${birthDate}-${birthTime}-${lat}-${lng}-${language}-${today}`;
         localStorage.setItem(cacheKey, JSON.stringify(object));
       }
     },
@@ -98,7 +101,7 @@ function ReadingContent() {
         weekday: "long",
         timeZone: "Asia/Kolkata",
       });
-      const cacheKey = `reading-${nakshatra}-${pada}-${name}-${birthDate}-${language}-${today}`;
+      const cacheKey = `reading-${nakshatra}-${pada}-${name}-${birthDate}-${birthTime}-${lat}-${lng}-${language}-${today}`;
       const cached = localStorage.getItem(cacheKey);
 
       if (cached) {
@@ -117,11 +120,14 @@ function ReadingContent() {
         pada,
         name,
         birthDate,
+        birthTime,
+        latitude: lat ? parseFloat(lat) : undefined,
+        longitude: lng ? parseFloat(lng) : undefined,
         language,
         currentDate: today,
       });
     }
-  }, [nakshatra, pada, name, birthDate, language, submit]);
+  }, [nakshatra, pada, name, birthDate, birthTime, lat, lng, language, submit]);
 
   const reading = cachedReading || object;
 
@@ -132,7 +138,7 @@ function ReadingContent() {
         className="inline-flex items-center gap-2 text-muted-foreground/60 hover:text-accent mb-12 transition-all group font-serif text-xs tracking-widest"
       >
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />{" "}
-        Back to Stars
+        Back
       </Link>
 
       <motion.div
