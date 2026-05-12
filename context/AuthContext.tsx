@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { 
   onAuthStateChanged, 
   signInWithPopup, 
+  signInWithRedirect,
   GoogleAuthProvider, 
   signOut,
   User 
@@ -34,9 +35,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     try {
+      // Attempt standard popup sign-in first
       await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error("Login failed:", error);
+    } catch (error: any) {
+      console.warn("Popup sign-in blocked or failed on mobile. Switching to redirect flow:", error?.message || error);
+      
+      // If the user closed it manually, we might not want to force redirect, 
+      // but mobile browsers often instantly close the popup tab triggering this error incorrectly.
+      // So falling back to redirect ensures robust completion on mobile browsers/WebViews.
+      try {
+        await signInWithRedirect(auth, provider);
+      } catch (redirectError) {
+        console.error("Redirect authentication trigger failed:", redirectError);
+      }
     }
   };
 
