@@ -267,7 +267,7 @@ function ReadingContent() {
   const reading = cachedReading || object;
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12 relative">
+    <div className="max-w-full sm:max-w-2xl mx-auto px-1 sm:px-6 py-12 relative">
       <ProfileMenu />
 
       {/* ── Back link (guests only) ──────────────────────────────────────── */}
@@ -286,7 +286,7 @@ function ReadingContent() {
         animate={{ opacity: 1, y: 0 }}
         className={`space-y-16 md:space-y-24 relative ${user ? "pt-16" : ""}`}
       >
-        <header className="text-center space-y-6">
+        <header className="text-center space-y-6 px-2 sm:px-4">
           <div className="space-y-2">
             <h1 className="text-3xl font-serif font-black tracking-tighter text-accent leading-none">
               Day Astrology Reading for{" "}

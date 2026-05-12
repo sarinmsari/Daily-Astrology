@@ -113,8 +113,8 @@ export const MindEmotionCard = ({
   mood?: AstroMood;
 }) => (
   <SectionWrapper title="Mind & Emotion" icon={Brain} mood={mood}>
-    <p className="text-foreground/90 leading-relaxed font-serif text-lg italic">
-      "{content}"
+    <p className="text-foreground/90 leading-relaxed font-serif text-sm sm:text-lg italic">
+      {content}
     </p>
   </SectionWrapper>
 );
@@ -131,7 +131,9 @@ export const RelationshipHarmonyGauge = ({
   const style = moodStyles[mood] || moodStyles.Mystical;
   return (
     <SectionWrapper title="Relationship Harmony" icon={Heart} mood={mood}>
-      <p className="text-foreground/80 leading-relaxed mb-6">{content}</p>
+      <p className="text-sm sm:text-base text-foreground/80 leading-relaxed mb-6">
+        {content}
+      </p>
       <div className="space-y-3">
         <div className="flex justify-between text-[10px] uppercase tracking-[0.2em] font-bold opacity-60">
           <span>Social Resonance</span>
@@ -162,7 +164,9 @@ export const CareerEnergyGauge = ({
   const style = moodStyles[mood] || moodStyles.Mystical;
   return (
     <SectionWrapper title="Career & Energy" icon={Briefcase} mood={mood}>
-      <p className="text-foreground/80 leading-relaxed mb-6">{content}</p>
+      <p className="text-sm sm:text-base text-foreground/80 leading-relaxed mb-6">
+        {content}
+      </p>
       <div className="space-y-3">
         <div className="flex justify-between text-[10px] uppercase tracking-[0.2em] font-bold opacity-60">
           <span>Celestial Drive</span>
@@ -192,7 +196,9 @@ export const WealthAbundanceCard = ({
   mood?: AstroMood;
 }) => (
   <SectionWrapper title="Wealth & Abundance" icon={Coins} mood={mood}>
-    <p className="text-foreground/90 leading-relaxed italic">{content}</p>
+    <p className="text-sm sm:text-base text-foreground/90 leading-relaxed italic">
+      {content}
+    </p>
   </SectionWrapper>
 );
 
@@ -204,7 +210,9 @@ export const HealthVitalityCard = ({
   mood?: AstroMood;
 }) => (
   <SectionWrapper title="Health & Vitality" icon={Activity} mood={mood}>
-    <p className="text-foreground/90 leading-relaxed italic">{content}</p>
+    <p className="text-sm sm:text-base text-foreground/90 leading-relaxed italic">
+      {content}
+    </p>
   </SectionWrapper>
 );
 
@@ -218,19 +226,19 @@ export const OracleAdvice = ({
   <motion.div
     initial={{ opacity: 0, scale: 0.9 }}
     animate={{ opacity: 1, scale: 1 }}
-    className="relative group overflow-hidden bg-foreground text-background p-10 rounded-[3rem] border border-white/10"
+    className="relative group overflow-hidden bg-foreground text-background p-8 sm:p-10 rounded-[3rem] border border-white/10"
   >
     <div className="absolute -top-10 -right-10 opacity-5 group-hover:opacity-10 transition-opacity duration-1000">
       <Zap className="w-40 h-40" />
     </div>
     <div className="relative z-10 space-y-6">
       <div className="flex items-center gap-2 text-accent">
-        <Sparkles className="w-5 h-5 animate-pulse" />
+        <Sparkles className="w-5 h-5 opacity-60" />
         <span className="text-[10px] uppercase tracking-[0.5em] font-black opacity-60">
           The Oracle Speaks
         </span>
       </div>
-      <p className="text-lg font-serif font-bold leading-relaxed tracking-tight">
+      <p className="text-sm sm:text-base font-serif font-bold leading-relaxed tracking-tight">
         {content}
       </p>
     </div>
@@ -265,7 +273,9 @@ export const LuckyElements = ({
           <span className="block text-[8px] uppercase tracking-widest opacity-40 mb-1">
             {item.label}
           </span>
-          <span className="block text-lg font-bold">{item.value}</span>
+          <span className="block text-sm sm:text-base font-bold">
+            {item.value}
+          </span>
         </div>
       ))}
     </div>
@@ -283,8 +293,8 @@ export const TransitSummary = ({
   mood?: AstroMood;
 }) => (
   <SectionWrapper title="Cosmic Transit" icon={AlertCircle} mood={mood}>
-    <div className="relative pl-6">
-      <p className="text-foreground/80 text-sm leading-relaxed font-medium italic">
+    <div className="relative">
+      <p className="text-foreground/80 text-sm sm:text-base leading-relaxed font-medium italic">
         {content}
       </p>
     </div>

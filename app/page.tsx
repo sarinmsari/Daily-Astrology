@@ -31,7 +31,7 @@ export default function LandingPage() {
           className="relative"
         >
           <div className="absolute -inset-4 bg-accent/10 blur-2xl rounded-full animate-pulse" />
-          <Stars className="w-16 h-16 text-accent relative" />
+          <Stars className="w-12 h-12 md:w-16 md:h-16 text-accent relative" />
         </motion.div>
 
         <div className="space-y-6 flex flex-col items-center">
@@ -39,7 +39,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="inline-flex items-center gap-3 px-6 py-2 vedic-glass rounded-full border border-accent/30 saffron-glow mb-2"
+            className="inline-flex items-center gap-3 px-6 py-2 vedic-glass rounded-full border border-accent/30 saffron-glow mb-4"
           >
             <span className="font-serif text-xs font-black tracking-[0.3em] text-accent uppercase">
               {new Date().toLocaleDateString("en-IN", {
@@ -56,7 +56,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-5xl md:text-7xl font-serif font-black tracking-tighter text-accent leading-tight"
+            className="text-4xl md:text-7xl font-serif font-black tracking-tighter text-accent leading-tight"
           >
             Ancient Wisdom. <br />
             <span className="text-foreground/80">Vedic Astrology.</span>
@@ -66,7 +66,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto font-body leading-relaxed"
+            className="text-sm md:text-xl text-muted-foreground max-w-2xl mx-auto font-body leading-relaxed"
           >
             Unlock the secrets of your destiny with Daily Astrology. We combine
             5,000 years of Vedic tradition with advanced intelligence to guide
@@ -125,12 +125,12 @@ export default function LandingPage() {
 
       {/* Trust Quote */}
       <section className="py-32 px-6 text-center max-w-3xl mx-auto space-y-8">
-        <h2 className="text-3xl font-serif italic text-accent/60 leading-relaxed">
+        <h2 className="text-2xl md:text-3xl font-serif italic text-accent/60 leading-relaxed">
           "The stars do not compel, they impel. Knowing your celestial tide is
           the first step to mastering your own destiny."
         </h2>
         <div className="w-12 h-px bg-accent/20 mx-auto" />
-        <p className="text-[10px] uppercase tracking-[0.5em] font-bold text-muted-foreground/40">
+        <p className="text-xs md:text-base font-bold text-muted-foreground/40">
           The Jyotish Tradition
         </p>
       </section>
