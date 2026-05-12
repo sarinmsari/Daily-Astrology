@@ -4,10 +4,19 @@ import { useState, useEffect } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, MapPin, Calendar, Clock, ArrowRight } from "lucide-react";
+import {
+  Sparkles,
+  MapPin,
+  Calendar,
+  Clock,
+  ArrowRight,
+  ArrowLeft,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { NAKSHATRAS } from "@/lib/astro-constants";
 import { useAuth } from "@/context/AuthContext";
+import ProfileMenu from "@/components/ProfileMenu";
+import { triggerHaptic } from "@/lib/haptics";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -53,7 +62,7 @@ export default function OnboardingForm() {
             const data = userDoc.data();
             if (data.birth_star_nakshatra) {
               router.push(
-                `/reading?nakshatra=${encodeURIComponent(data.birth_star_nakshatra)}&pada=${data.nakshatra_pada || 1}&name=${encodeURIComponent(data.full_name || user.displayName || "Soul")}&birthDate=${data.birth_date || ""}&language=${data.language || "English"}`,
+                `/reading?uid=${encodeURIComponent(user.uid)}&nakshatra=${encodeURIComponent(data.birth_star_nakshatra)}&pada=${data.nakshatra_pada || 1}&nakshatraIndex=${data.nakshatra_index ?? 0}&name=${encodeURIComponent(data.full_name || user.displayName || "Soul")}&birthDate=${data.birth_date || ""}&birthTime=${data.birth_time || ""}&lat=${data.latitude ?? ""}&lng=${data.longitude ?? ""}&language=${data.language || "English"}`,
               );
               return;
             }
@@ -117,8 +126,10 @@ export default function OnboardingForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [uid, setUid] = useState<string>("");
 
   const selectCity = (item: any) => {
+    triggerHaptic(10);
     setFormData({
       ...formData,
       city: item.display_name,
@@ -128,18 +139,32 @@ export default function OnboardingForm() {
     setSuggestions([]);
   };
 
-  const nextStep = () => setStep(step + 1);
+  const nextStep = () => {
+    triggerHaptic(15);
+    setStep(step + 1);
+  };
+  const prevStep = () => {
+    triggerHaptic(10);
+    setStep(step - 1);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    triggerHaptic(20);
     setIsSubmitting(true);
     setError(null);
     try {
       // Import the action dynamically to avoid issues with "use server" in client components
       const { saveUserOnboarding } = await import("@/app/onboarding/actions");
 
+      // Use the authenticated user's real UID so their profile is saved under
+      // their Firebase identity. Fall back to a guest UID for anonymous sessions.
+      const resolvedUid =
+        user?.uid ?? "user-" + Math.random().toString(36).substring(2, 10);
+
       const res = await saveUserOnboarding({
         ...formData,
-        uid: user?.uid || "anonymous-" + Math.random().toString(36).substring(7),
+        uid: resolvedUid,
+        isAuthenticated: !!user,
         // If manual flow, ensure we pass the selected values
         nakshatra: flowMethod === "manual" ? formData.nakshatra : undefined,
         pada:
@@ -149,6 +174,7 @@ export default function OnboardingForm() {
       });
 
       if (res.success) {
+        setUid(resolvedUid);
         setResult(res);
         setStep(4);
       } else {
@@ -179,6 +205,9 @@ export default function OnboardingForm() {
 
   return (
     <div className="w-full md:max-w-xl mx-auto py-12 px-6 md:px-12 relative overflow-visible min-h-[600px] flex flex-col justify-center">
+      {/* Profile icon — only shown when signed in */}
+      <ProfileMenu showReset={false} />
+
       <AnimatePresence mode="wait">
         {step === 1 && (
           <motion.div
@@ -217,9 +246,10 @@ export default function OnboardingForm() {
                   {["English", "Hindi", "Malayalam", "Tamil"].map((lang) => (
                     <button
                       key={lang}
-                      onClick={() =>
-                        setFormData({ ...formData, language: lang })
-                      }
+                      onClick={() => {
+                        triggerHaptic(10);
+                        setFormData({ ...formData, language: lang });
+                      }}
                       className={cn(
                         "py-3 rounded-xl text-xs font-serif font-bold transition-all border cursor-pointer",
                         formData.language === lang
@@ -237,7 +267,10 @@ export default function OnboardingForm() {
             {!user && (
               <div className="pt-4 border-t border-black/5">
                 <button
-                  onClick={loginWithGoogle}
+                  onClick={() => {
+                    triggerHaptic(15);
+                    loginWithGoogle();
+                  }}
                   className="w-full bg-white border border-black/10 text-black font-body text-sm py-4 rounded-2xl flex items-center justify-center gap-3 hover:bg-black/5 transition-all"
                 >
                   <img
@@ -268,11 +301,18 @@ export default function OnboardingForm() {
             exit={{ opacity: 0, x: -20 }}
             className="space-y-8"
           >
+            <button
+              onClick={prevStep}
+              className="inline-flex items-center gap-2 text-muted-foreground/60 hover:text-accent transition-all group font-serif text-xs tracking-widest mb-4 cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />{" "}
+              Back
+            </button>
             <div className="text-center space-y-2">
               <h2 className="text-3xl font-serif font-bold text-accent tracking-widest">
                 Birth Details
               </h2>
-              <div className="flex justify-center gap-4 mt-4">
+              {/* <div className="flex justify-center gap-4 mt-4">
                 <button
                   onClick={() => setFlowMethod("calculate")}
                   className={cn(
@@ -295,7 +335,7 @@ export default function OnboardingForm() {
                 >
                   I Know My Birth Star
                 </button>
-              </div>
+              </div> */}
             </div>
 
             {flowMethod === "calculate" ? (
@@ -414,12 +454,13 @@ export default function OnboardingForm() {
                     {[1, 2, 3, 4].map((p) => (
                       <button
                         key={p}
-                        onClick={() =>
+                        onClick={() => {
+                          triggerHaptic(10);
                           setFormData({
                             ...formData,
                             pada: formData.pada === p ? 0 : p,
-                          })
-                        }
+                          });
+                        }}
                         className={cn(
                           "py-3 rounded-xl text-xs font-serif font-bold transition-all border",
                           formData.pada === p
@@ -483,6 +524,13 @@ export default function OnboardingForm() {
             exit={{ opacity: 0, x: -20 }}
             className="space-y-8"
           >
+            <button
+              onClick={prevStep}
+              className="inline-flex items-center gap-2 text-muted-foreground/60 hover:text-accent transition-all group font-serif text-xs tracking-widest mb-4 cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />{" "}
+              Back
+            </button>
             <div className="text-center space-y-2">
               <h2 className="text-3xl font-serif font-bold text-accent tracking-widest">
                 Birth Place
@@ -570,6 +618,13 @@ export default function OnboardingForm() {
             animate={{ opacity: 1, scale: 1 }}
             className="text-center space-y-10"
           >
+            <button
+              onClick={prevStep}
+              className="inline-flex items-center gap-2 text-muted-foreground/60 hover:text-accent transition-all cursor-pointer group font-serif text-xs tracking-widest mb-4"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />{" "}
+              Back
+            </button>
             <div className="space-y-3">
               <h2 className="text-3xl font-serif font-bold text-accent tracking-[0.2em]">
                 Birth Star
@@ -595,11 +650,12 @@ export default function OnboardingForm() {
             </motion.div>
 
             <button
-              onClick={() =>
+              onClick={() => {
+                triggerHaptic(25);
                 router.push(
-                  `/reading?nakshatra=${encodeURIComponent(result.nakshatra)}&pada=${result.pada}&name=${encodeURIComponent(formData.name)}&birthDate=${formData.birthDate}&language=${formData.language}`,
-                )
-              }
+                  `/reading?uid=${encodeURIComponent(uid)}&nakshatra=${encodeURIComponent(result.nakshatra)}&nakshatraIndex=${result.nakshatraIndex ?? 0}&pada=${result.pada}&name=${encodeURIComponent(formData.name)}&birthDate=${formData.birthDate}&birthTime=${formData.birthTime}&lat=${formData.lat}&lng=${formData.lng}&language=${formData.language}`,
+                );
+              }}
               className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-serif font-black py-5 rounded-2xl flex items-center justify-center gap-3 hover:scale-[1.02] transition-all group cursor-pointer"
             >
               How my day looks like?

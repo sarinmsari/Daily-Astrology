@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import ProfileMenu from "@/components/ProfileMenu";
 
 import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { z } from "zod";
@@ -72,13 +73,26 @@ function ReadingContent() {
   const { user, loginWithGoogle, logout } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const uid = searchParams.get("uid") || "";
   const nakshatra = searchParams.get("nakshatra");
+  const nakshatraIndex = searchParams.get("nakshatraIndex");
   const pada = searchParams.get("pada");
   const name = searchParams.get("name");
   const birthDate = searchParams.get("birthDate");
+  const birthTime = searchParams.get("birthTime");
+  const lat = searchParams.get("lat");
+  const lng = searchParams.get("lng");
   const language = searchParams.get("language") || "English";
 
   const [cachedReading, setCachedReading] = useState<any>(null);
+  const [isComputingChart, setIsComputingChart] = useState(false);
+  const [chartError, setChartError] = useState<string | null>(null);
+
+  // Keep a ref to `user` so the memoized onFinish closure can read current auth state.
+  const userRef = useRef(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   const { object, submit, isLoading } = useObject({
     api: "/api/astro-reading",
@@ -92,8 +106,23 @@ function ReadingContent() {
           weekday: "long",
           timeZone: "Asia/Kolkata",
         });
-        const cacheKey = `reading-${nakshatra}-${pada}-${name}-${birthDate}-${language}-${today}`;
+        const cacheKey = `reading-${nakshatra}-${pada}-${name}-${birthDate}-${birthTime}-${lat}-${lng}-${language}-${today}`;
         localStorage.setItem(cacheKey, JSON.stringify(object));
+
+        // ── Log every AI generation to the dated Firestore collection ──────
+        // uid is the Firebase UID for authenticated users, guest UID otherwise.
+        if (uid && nakshatra && name) {
+          import("@/app/onboarding/actions").then(({ saveReadingLog }) => {
+            saveReadingLog({
+              uid,
+              name: name!,
+              nakshatra: nakshatra!,
+              pada: pada ?? 0,
+              language,
+              isAuthenticated: !!userRef.current,
+            }).catch(console.error);
+          });
+        }
       }
     },
   });
@@ -109,7 +138,7 @@ function ReadingContent() {
         weekday: "long",
         timeZone: "Asia/Kolkata",
       });
-      const cacheKey = `reading-${nakshatra}-${pada}-${name}-${birthDate}-${language}-${today}`;
+      const cacheKey = `reading-${nakshatra}-${pada}-${name}-${birthDate}-${birthTime}-${lat}-${lng}-${language}-${today}`;
       const cached = localStorage.getItem(cacheKey);
 
       if (cached) {
@@ -123,34 +152,103 @@ function ReadingContent() {
       }
 
       hasSubmitted.current = true;
-      submit({
-        nakshatra,
-        pada,
-        name,
-        birthDate,
-        language,
-        currentDate: today,
+
+      // ── Step 1: Compute ephemeris data (Node.js, fast, < 5s) ─────────────────
+      const readingDateISO = new Date().toLocaleDateString("en-CA", {
+        timeZone: "Asia/Kolkata",
       });
+
+      setIsComputingChart(true);
+      setChartError(null);
+
+      const fetchChartAndSubmit = async () => {
+        try {
+          const chartRes = await fetch("/api/astro-chart", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              uid, // ← used for Firestore natal chart lookup
+              birthDate, // ← fallback if Firestore miss
+              birthTime,
+              latitude: lat ? parseFloat(lat) : undefined,
+              longitude: lng ? parseFloat(lng) : undefined,
+              nakshatraIndex: nakshatraIndex ? parseInt(nakshatraIndex) : 0,
+              readingDateISO,
+            }),
+          });
+
+          if (!chartRes.ok) throw new Error("Chart computation failed");
+          const chartData = await chartRes.json();
+
+          // ── Step 2: Stream LLM reading (Edge, up to 30s) ───────────────────
+          setIsComputingChart(false);
+          submit({
+            nakshatra,
+            pada,
+            name,
+            language,
+            currentDate: today,
+            // Pre-computed — Edge route uses these directly, no WASM needed
+            natalChart: chartData.natalChart,
+            transitChart: chartData.transitChart,
+            derived: chartData.derived,
+          });
+        } catch (err: any) {
+          setIsComputingChart(false);
+          setChartError(
+            err.message || "Could not compute chart. Please try again.",
+          );
+          console.error("Chart fetch error:", err);
+        }
+      };
+
+      fetchChartAndSubmit();
     }
-  }, [nakshatra, pada, name, birthDate, language, submit]);
+  }, [
+    nakshatra,
+    pada,
+    name,
+    birthDate,
+    birthTime,
+    lat,
+    lng,
+    language,
+    nakshatraIndex,
+    submit,
+  ]);
 
   useEffect(() => {
     const syncWithUser = async () => {
       if (user && nakshatra && name && birthDate) {
         try {
+          // ── Check if user already has a complete Firestore profile ──────────
+          // Skip sync if natal_chart already exists — we don't want to overwrite
+          // a valid chart that was computed with real coordinates.
+          const { db } = await import("@/lib/firebase");
+          const { doc, getDoc } = await import("firebase/firestore");
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists() && userDoc.data()?.natal_chart) {
+            console.log(
+              "Authenticated profile already complete, skipping sync.",
+            );
+            return;
+          }
+
           const { saveUserOnboarding } =
             await import("@/app/onboarding/actions");
           await saveUserOnboarding({
             name,
             birthDate,
-            birthTime: "12:00", // Fallback if not in params
-            city: "Unknown", // Fallback
-            lat: 0,
-            lng: 0,
+            birthTime: birthTime || "12:00",
+            city: "Unknown",
+            lat: lat ? parseFloat(lat) : 0,
+            lng: lng ? parseFloat(lng) : 0,
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             uid: user.uid,
+            isAuthenticated: true,
             nakshatra,
             pada: Number(pada) || 0,
+            language,
           });
           console.log("Reading synced with authenticated profile");
         } catch (e) {
@@ -159,7 +257,7 @@ function ReadingContent() {
       }
     };
     syncWithUser();
-  }, [user, nakshatra, pada, name, birthDate]);
+  }, [user, nakshatra, pada, name, birthDate, birthTime, lat, lng, language]);
 
   const handleLogout = async () => {
     await logout();
@@ -169,30 +267,24 @@ function ReadingContent() {
   const reading = cachedReading || object;
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12">
-      <div className="flex justify-between items-center mb-12">
-        {!user ? (
-          <Link
-            href="/onboarding"
-            className="inline-flex items-center gap-2 text-muted-foreground/60 hover:text-accent transition-all group font-serif text-xs tracking-widest"
-          >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />{" "}
-            Back
-          </Link>
-        ) : (
-          <button
-            onClick={handleLogout}
-            className="ml-auto inline-flex items-center gap-2 text-muted-foreground/60 hover:text-red-400 transition-all group font-serif text-xs tracking-widest cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" /> Sign Out
-          </button>
-        )}
-      </div>
+    <div className="max-w-2xl mx-auto px-6 py-12 relative">
+      <ProfileMenu />
+
+      {/* ── Back link (guests only) ──────────────────────────────────────── */}
+      {!user && (
+        <Link
+          href="/onboarding"
+          className="inline-flex items-center gap-2 text-muted-foreground/60 hover:text-accent mb-12 transition-all group font-serif text-xs tracking-widest"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />{" "}
+          Back
+        </Link>
+      )}
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="space-y-16 md:space-y-24 relative"
+        className={`space-y-16 md:space-y-24 relative ${user ? "pt-16" : ""}`}
       >
         <header className="text-center space-y-6">
           <div className="space-y-2">
@@ -222,39 +314,28 @@ function ReadingContent() {
         </header>
 
         <div className="space-y-12 md:space-y-20 relative">
-          {!isLoading && !reading && (
-            <div className="flex flex-col items-center justify-center space-y-4 py-12 border border-dashed border-accent/20 rounded-[2rem]">
-              <p className="text-muted-foreground font-body italic text-sm text-center">
-                The stars are quiet. <br />
-                {!nakshatra || !pada || !name || !birthDate
-                  ? "Celestial context is missing. Please return to the portal."
-                  : "Click below to channel the Oracle."}
-              </p>
-              {nakshatra && pada && name && birthDate && (
-                <button
-                  onClick={() =>
-                    submit({
-                      nakshatra,
-                      pada,
-                      name,
-                      birthDate,
-                      currentDate: new Date().toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                        weekday: "long",
-                        timeZone: "Asia/Kolkata",
-                      }),
-                    })
-                  }
-                  className="px-6 py-2 bg-accent/10 hover:bg-accent/20 text-accent rounded-full text-xs font-black tracking-widest transition-all"
-                >
-                  CHANNEL NOW
-                </button>
-              )}
+          {/* ── Phase 1 loader: computing ephemeris ───────────────────────── */}
+          {isComputingChart && !reading && (
+            <div className="flex flex-col items-center justify-center space-y-8 py-24">
+              <motion.div
+                animate={{ scale: [1, 1.15, 1], rotate: [0, 360] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                className="text-accent/40"
+              >
+                <Stars className="w-20 h-20" />
+              </motion.div>
+              <div className="text-center space-y-2">
+                <p className="text-accent text-sm font-serif font-black tracking-[0.5em] uppercase">
+                  Reading the Skies
+                </p>
+                <p className="text-muted-foreground/40 font-body text-xs italic">
+                  Calculating your natal &amp; transit chart...
+                </p>
+              </div>
             </div>
           )}
 
+          {/* ── Phase 2 loader: LLM streaming ─────────────────────────────── */}
           {isLoading && !reading && (
             <div className="flex flex-col items-center justify-center space-y-8 py-24">
               <motion.div
@@ -279,6 +360,27 @@ function ReadingContent() {
                   Consulting the ancient Akashic records...
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* ── Error state ───────────────────────────────────────────────── */}
+          {chartError && !reading && (
+            <div className="flex flex-col items-center justify-center space-y-4 py-12 border border-dashed border-red-400/30 rounded-[2rem]">
+              <p className="text-red-400/70 font-body italic text-sm text-center">
+                {chartError}
+              </p>
+            </div>
+          )}
+
+          {/* ── Idle state (no params) ────────────────────────────────────── */}
+          {!isComputingChart && !isLoading && !reading && !chartError && (
+            <div className="flex flex-col items-center justify-center space-y-4 py-12 border border-dashed border-accent/20 rounded-[2rem]">
+              <p className="text-muted-foreground font-body italic text-sm text-center">
+                The stars are quiet. <br />
+                {!nakshatra || !pada || !name || !birthDate
+                  ? "Celestial context is missing. Please return to the portal."
+                  : "Starting channel..."}
+              </p>
             </div>
           )}
 
