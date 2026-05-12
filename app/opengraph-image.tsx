@@ -28,6 +28,7 @@ export default async function Image() {
       {/* Top-left subtle decorative circle */}
       <div
         style={{
+          display: "flex",
           position: "absolute",
           top: -150,
           left: -150,
@@ -41,6 +42,7 @@ export default async function Image() {
       {/* Bottom-right subtle decorative circle */}
       <div
         style={{
+          display: "flex",
           position: "absolute",
           bottom: -150,
           right: -150,
@@ -58,7 +60,6 @@ export default async function Image() {
         viewBox="0 0 100 100"
         style={{
           position: "absolute",
-          opacity: 0.05,
         }}
       >
         <circle
@@ -66,7 +67,7 @@ export default async function Image() {
           cy="50"
           r="42"
           fill="none"
-          stroke="#C69C2C"
+          stroke="rgba(198, 156, 44, 0.1)"
           strokeWidth="0.5"
         />
         <circle
@@ -74,7 +75,7 @@ export default async function Image() {
           cy="50"
           r="32"
           fill="none"
-          stroke="#C69C2C"
+          stroke="rgba(198, 156, 44, 0.1)"
           strokeWidth="0.5"
         />
         <circle
@@ -82,7 +83,7 @@ export default async function Image() {
           cy="50"
           r="20"
           fill="none"
-          stroke="#C69C2C"
+          stroke="rgba(198, 156, 44, 0.1)"
           strokeWidth="0.5"
         />
         <line
@@ -90,7 +91,7 @@ export default async function Image() {
           y1="5"
           x2="50"
           y2="95"
-          stroke="#C69C2C"
+          stroke="rgba(198, 156, 44, 0.1)"
           strokeWidth="0.5"
         />
         <line
@@ -98,7 +99,7 @@ export default async function Image() {
           y1="50"
           x2="95"
           y2="50"
-          stroke="#C69C2C"
+          stroke="rgba(198, 156, 44, 0.1)"
           strokeWidth="0.5"
         />
         <line
@@ -106,7 +107,7 @@ export default async function Image() {
           y1="18"
           x2="82"
           y2="82"
-          stroke="#C69C2C"
+          stroke="rgba(198, 156, 44, 0.1)"
           strokeWidth="0.5"
         />
         <line
@@ -114,13 +115,13 @@ export default async function Image() {
           y1="18"
           x2="18"
           y2="82"
-          stroke="#C69C2C"
+          stroke="rgba(198, 156, 44, 0.1)"
           strokeWidth="0.5"
         />
         <polygon
           points="50,8 62,38 92,50 62,62 50,92 38,62 8,50 38,38"
           fill="none"
-          stroke="#C69C2C"
+          stroke="rgba(198, 156, 44, 0.1)"
           strokeWidth="0.5"
         />
       </svg>
@@ -137,7 +138,7 @@ export default async function Image() {
           border: "1px solid rgba(198, 156, 44, 0.25)",
           borderRadius: 32,
           backgroundColor: "rgba(253, 252, 251, 0.9)",
-          padding: "40px",
+          padding: 40,
         }}
       >
         {/* Top Star Icon */}
@@ -169,9 +170,8 @@ export default async function Image() {
         <div
           style={{
             fontSize: 64,
-            fontWeight: 800,
+            fontWeight: "bold",
             color: "#C69C2C",
-            letterSpacing: "-0.03em",
             marginBottom: 12,
             textAlign: "center",
           }}
@@ -183,9 +183,8 @@ export default async function Image() {
         <div
           style={{
             fontSize: 34,
-            fontWeight: 700,
+            fontWeight: "bold",
             color: "#2C1810",
-            letterSpacing: "-0.01em",
             marginBottom: 20,
             textAlign: "center",
           }}
@@ -200,8 +199,6 @@ export default async function Image() {
             color: "#8B5C45",
             textAlign: "center",
             maxWidth: 780,
-            lineHeight: 1.4,
-            fontWeight: 400,
           }}
         >
           Unlock personalized Vedic Nakshatra readings, real-time transits, and
@@ -211,6 +208,7 @@ export default async function Image() {
         {/* Bottom simple divider */}
         <div
           style={{
+            display: "flex",
             width: 60,
             height: 4,
             backgroundColor: "#C69C2C",
