@@ -34,7 +34,24 @@ export default function LandingPage() {
           <Stars className="w-16 h-16 text-accent relative" />
         </motion.div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 flex flex-col items-center">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="inline-flex items-center gap-3 px-6 py-2 vedic-glass rounded-full border border-accent/30 saffron-glow mb-2"
+          >
+            <span className="font-serif text-xs font-black tracking-[0.3em] text-accent uppercase">
+              {new Date().toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+                weekday: "long",
+                timeZone: "Asia/Kolkata",
+              })}
+            </span>
+          </motion.div>
+
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
