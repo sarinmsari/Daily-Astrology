@@ -77,7 +77,7 @@ export default function LandingPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1, duration: 2 }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-8 text-muted-foreground/30"
+          className="mb-10 flex items-center gap-8 text-muted-foreground/30"
         >
           <Sun className="w-6 h-6 animate-spin-slow" />
           <Moon className="w-6 h-6" />

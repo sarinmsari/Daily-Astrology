@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles,
@@ -12,6 +14,9 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { NAKSHATRAS } from "@/lib/astro-constants";
+import { useAuth } from "@/context/AuthContext";
+import ProfileMenu from "@/components/ProfileMenu";
+import { triggerHaptic } from "@/lib/haptics";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -20,6 +25,7 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export default function OnboardingForm() {
+  const { user, loginWithGoogle } = useAuth();
   const [step, setStep] = useState(1);
   const [flowMethod, setFlowMethod] = useState<"calculate" | "manual">(
     "calculate",
@@ -42,7 +48,34 @@ export default function OnboardingForm() {
   const [searchQuery, setSearchQuery] = useState("");
   const [nakshatraSearch, setNakshatraSearch] = useState("");
   const [nakshatraSelectedIndex, setNakshatraSelectedIndex] = useState(-1);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const router = useRouter();
+
+  // Check for existing profile and redirect
+  useEffect(() => {
+    if (user && step === 1) {
+      const checkProfile = async () => {
+        setIsRedirecting(true);
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            if (data.birth_star_nakshatra) {
+              router.push(
+                `/reading?uid=${encodeURIComponent(user.uid)}&nakshatra=${encodeURIComponent(data.birth_star_nakshatra)}&pada=${data.nakshatra_pada || 1}&nakshatraIndex=${data.nakshatra_index ?? 0}&name=${encodeURIComponent(data.full_name || user.displayName || "Soul")}&birthDate=${data.birth_date || ""}&birthTime=${data.birth_time || ""}&lat=${data.latitude ?? ""}&lng=${data.longitude ?? ""}&language=${data.language || "English"}`,
+              );
+              return;
+            }
+          }
+        } catch (err) {
+          console.error("Error checking profile:", err);
+        } finally {
+          setIsRedirecting(false);
+        }
+      };
+      checkProfile();
+    }
+  }, [user, step, router]);
 
   // Debounced search logic
   useEffect(() => {
@@ -96,6 +129,7 @@ export default function OnboardingForm() {
   const [uid, setUid] = useState<string>("");
 
   const selectCity = (item: any) => {
+    triggerHaptic(10);
     setFormData({
       ...formData,
       city: item.display_name,
@@ -105,20 +139,32 @@ export default function OnboardingForm() {
     setSuggestions([]);
   };
 
-  const nextStep = () => setStep(step + 1);
-  const prevStep = () => setStep(step - 1);
+  const nextStep = () => {
+    triggerHaptic(15);
+    setStep(step + 1);
+  };
+  const prevStep = () => {
+    triggerHaptic(10);
+    setStep(step - 1);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    triggerHaptic(20);
     setIsSubmitting(true);
     setError(null);
     try {
       // Import the action dynamically to avoid issues with "use server" in client components
       const { saveUserOnboarding } = await import("@/app/onboarding/actions");
 
-      const generatedUid = "user-" + Math.random().toString(36).substring(2, 10);
+      // Use the authenticated user's real UID so their profile is saved under
+      // their Firebase identity. Fall back to a guest UID for anonymous sessions.
+      const resolvedUid =
+        user?.uid ?? "user-" + Math.random().toString(36).substring(2, 10);
+
       const res = await saveUserOnboarding({
         ...formData,
-        uid: generatedUid,
+        uid: resolvedUid,
+        isAuthenticated: !!user,
         // If manual flow, ensure we pass the selected values
         nakshatra: flowMethod === "manual" ? formData.nakshatra : undefined,
         pada:
@@ -128,7 +174,7 @@ export default function OnboardingForm() {
       });
 
       if (res.success) {
-        setUid(generatedUid);
+        setUid(resolvedUid);
         setResult(res);
         setStep(4);
       } else {
@@ -141,8 +187,27 @@ export default function OnboardingForm() {
     }
   };
 
+  if (isRedirecting) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[600px] space-y-4">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        >
+          <Sparkles className="w-12 h-12 text-accent/40" />
+        </motion.div>
+        <p className="text-accent font-serif text-sm tracking-widest uppercase">
+          Aligning with your destiny...
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full md:max-w-xl mx-auto py-12 px-6 md:px-12 relative overflow-visible min-h-[600px] flex flex-col justify-center">
+      {/* Profile icon — only shown when signed in */}
+      <ProfileMenu showReset={false} />
+
       <AnimatePresence mode="wait">
         {step === 1 && (
           <motion.div
@@ -181,9 +246,10 @@ export default function OnboardingForm() {
                   {["English", "Hindi", "Malayalam", "Tamil"].map((lang) => (
                     <button
                       key={lang}
-                      onClick={() =>
-                        setFormData({ ...formData, language: lang })
-                      }
+                      onClick={() => {
+                        triggerHaptic(10);
+                        setFormData({ ...formData, language: lang });
+                      }}
                       className={cn(
                         "py-3 rounded-xl text-xs font-serif font-bold transition-all border cursor-pointer",
                         formData.language === lang
@@ -197,6 +263,26 @@ export default function OnboardingForm() {
                 </div>
               </div>
             </div>
+
+            {!user && (
+              <div className="pt-4 border-t border-black/5">
+                <button
+                  onClick={() => {
+                    triggerHaptic(15);
+                    loginWithGoogle();
+                  }}
+                  className="w-full bg-white border border-black/10 text-black font-body text-sm py-4 rounded-2xl flex items-center justify-center gap-3 hover:bg-black/5 transition-all"
+                >
+                  <img
+                    src="https://www.google.com/favicon.ico"
+                    className="w-4 h-4"
+                    alt="Google"
+                  />
+                  Sign in to save your readings
+                </button>
+              </div>
+            )}
+
             <button
               onClick={nextStep}
               disabled={!formData.name}
@@ -368,12 +454,13 @@ export default function OnboardingForm() {
                     {[1, 2, 3, 4].map((p) => (
                       <button
                         key={p}
-                        onClick={() =>
+                        onClick={() => {
+                          triggerHaptic(10);
                           setFormData({
                             ...formData,
                             pada: formData.pada === p ? 0 : p,
-                          })
-                        }
+                          });
+                        }}
                         className={cn(
                           "py-3 rounded-xl text-xs font-serif font-bold transition-all border",
                           formData.pada === p
@@ -564,6 +651,7 @@ export default function OnboardingForm() {
 
             <button
               onClick={() => {
+                triggerHaptic(25);
                 router.push(
                   `/reading?uid=${encodeURIComponent(uid)}&nakshatra=${encodeURIComponent(result.nakshatra)}&nakshatraIndex=${result.nakshatraIndex ?? 0}&pada=${result.pada}&name=${encodeURIComponent(formData.name)}&birthDate=${formData.birthDate}&birthTime=${formData.birthTime}&lat=${formData.lat}&lng=${formData.lng}&language=${formData.language}`,
                 );

@@ -1,10 +1,20 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, Suspense, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Moon, Sun, Stars, ArrowLeft } from "lucide-react";
+import {
+  Sparkles,
+  Moon,
+  Sun,
+  Stars,
+  ArrowLeft,
+  LogIn,
+  LogOut,
+} from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import ProfileMenu from "@/components/ProfileMenu";
 
 import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { z } from "zod";
@@ -60,6 +70,8 @@ const ReadingSchema = z.object({
 });
 
 function ReadingContent() {
+  const { user, loginWithGoogle, logout } = useAuth();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const uid = searchParams.get("uid") || "";
   const nakshatra = searchParams.get("nakshatra");
@@ -76,6 +88,12 @@ function ReadingContent() {
   const [isComputingChart, setIsComputingChart] = useState(false);
   const [chartError, setChartError] = useState<string | null>(null);
 
+  // Keep a ref to `user` so the memoized onFinish closure can read current auth state.
+  const userRef = useRef(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
   const { object, submit, isLoading } = useObject({
     api: "/api/astro-reading",
     schema: ReadingSchema,
@@ -90,6 +108,21 @@ function ReadingContent() {
         });
         const cacheKey = `reading-${nakshatra}-${pada}-${name}-${birthDate}-${birthTime}-${lat}-${lng}-${language}-${today}`;
         localStorage.setItem(cacheKey, JSON.stringify(object));
+
+        // ── Log every AI generation to the dated Firestore collection ──────
+        // uid is the Firebase UID for authenticated users, guest UID otherwise.
+        if (uid && nakshatra && name) {
+          import("@/app/onboarding/actions").then(({ saveReadingLog }) => {
+            saveReadingLog({
+              uid,
+              name: name!,
+              nakshatra: nakshatra!,
+              pada: pada ?? 0,
+              language,
+              isAuthenticated: !!userRef.current,
+            }).catch(console.error);
+          });
+        }
       }
     },
   });
@@ -134,8 +167,8 @@ function ReadingContent() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              uid,          // ← used for Firestore natal chart lookup
-              birthDate,    // ← fallback if Firestore miss
+              uid, // ← used for Firestore natal chart lookup
+              birthDate, // ← fallback if Firestore miss
               birthTime,
               latitude: lat ? parseFloat(lat) : undefined,
               longitude: lng ? parseFloat(lng) : undefined,
@@ -162,32 +195,96 @@ function ReadingContent() {
           });
         } catch (err: any) {
           setIsComputingChart(false);
-          setChartError(err.message || "Could not compute chart. Please try again.");
+          setChartError(
+            err.message || "Could not compute chart. Please try again.",
+          );
           console.error("Chart fetch error:", err);
         }
       };
 
       fetchChartAndSubmit();
     }
-  }, [nakshatra, pada, name, birthDate, birthTime, lat, lng, language, nakshatraIndex, submit]);
+  }, [
+    nakshatra,
+    pada,
+    name,
+    birthDate,
+    birthTime,
+    lat,
+    lng,
+    language,
+    nakshatraIndex,
+    submit,
+  ]);
 
+  useEffect(() => {
+    const syncWithUser = async () => {
+      if (user && nakshatra && name && birthDate) {
+        try {
+          // ── Check if user already has a complete Firestore profile ──────────
+          // Skip sync if natal_chart already exists — we don't want to overwrite
+          // a valid chart that was computed with real coordinates.
+          const { db } = await import("@/lib/firebase");
+          const { doc, getDoc } = await import("firebase/firestore");
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists() && userDoc.data()?.natal_chart) {
+            console.log(
+              "Authenticated profile already complete, skipping sync.",
+            );
+            return;
+          }
+
+          const { saveUserOnboarding } =
+            await import("@/app/onboarding/actions");
+          await saveUserOnboarding({
+            name,
+            birthDate,
+            birthTime: birthTime || "12:00",
+            city: "Unknown",
+            lat: lat ? parseFloat(lat) : 0,
+            lng: lng ? parseFloat(lng) : 0,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            uid: user.uid,
+            isAuthenticated: true,
+            nakshatra,
+            pada: Number(pada) || 0,
+            language,
+          });
+          console.log("Reading synced with authenticated profile");
+        } catch (e) {
+          console.error("Failed to sync reading with user", e);
+        }
+      }
+    };
+    syncWithUser();
+  }, [user, nakshatra, pada, name, birthDate, birthTime, lat, lng, language]);
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/onboarding");
+  };
 
   const reading = cachedReading || object;
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12">
-      <Link
-        href="/onboarding"
-        className="inline-flex items-center gap-2 text-muted-foreground/60 hover:text-accent mb-12 transition-all group font-serif text-xs tracking-widest"
-      >
-        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />{" "}
-        Back
-      </Link>
+    <div className="max-w-2xl mx-auto px-6 py-12 relative">
+      <ProfileMenu />
+
+      {/* ── Back link (guests only) ──────────────────────────────────────── */}
+      {!user && (
+        <Link
+          href="/onboarding"
+          className="inline-flex items-center gap-2 text-muted-foreground/60 hover:text-accent mb-12 transition-all group font-serif text-xs tracking-widest"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />{" "}
+          Back
+        </Link>
+      )}
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="space-y-16 md:space-y-24 relative"
+        className={`space-y-16 md:space-y-24 relative ${user ? "pt-16" : ""}`}
       >
         <header className="text-center space-y-6">
           <div className="space-y-2">
@@ -345,12 +442,37 @@ function ReadingContent() {
             </div>
           </AnimatePresence>
 
+          {!isLoading && !user && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-12 p-8 border border-accent/20 rounded-[2rem] bg-accent/5 text-center space-y-4"
+            >
+              <div className="space-y-2">
+                <h3 className="font-serif font-black text-accent text-lg">
+                  Save this journey?
+                </h3>
+                <p className="text-muted-foreground text-xs font-body">
+                  Sign in to associate this celestial reading with your profile
+                  and access it anytime.
+                </p>
+              </div>
+              <button
+                onClick={loginWithGoogle}
+                className="inline-flex items-center gap-3 px-8 py-3 bg-accent text-accent-foreground rounded-full cursor-pointer text-xs font-black tracking-widest transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <LogIn className="w-4 h-4" />
+                SignIn with google
+              </button>
+            </motion.div>
+          )}
+
           {!isLoading && (
             <motion.footer
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1 }}
-              className="pt-12 border-t border-black/5 flex justify-center gap-10 text-muted-foreground/40"
+              className="pt-12 border-t border-black/5 flex select-none justify-center gap-10 text-muted-foreground/40"
             >
               <div className="flex items-center gap-3">
                 <Sun className="w-5 h-5" />
