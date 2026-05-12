@@ -14,6 +14,12 @@ const spectral = Spectral({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ||
+      (process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "http://localhost:3000"),
+  ),
   title:
     "DailyAstrology | Vedic Astrology & Personalized Daily Nakshatra Readings",
   description:
@@ -27,6 +33,16 @@ export const metadata: Metadata = {
     "AI Astrology",
     "Birth Star",
   ],
+  openGraph: {
+    title:
+      "DailyAstrology | Vedic Astrology & Personalized Daily Nakshatra Readings",
+    description:
+      "Unlock ancient Vedic wisdom with modern AI. Get your personalized daily Nakshatra reading, transit insights, and cosmic guidance tailored to your birth star.",
+    url: "/",
+    siteName: "DailyAstrology",
+    locale: "en_US",
+    type: "website",
+  },
 };
 
 import { AuthProvider } from "@/context/AuthContext";
