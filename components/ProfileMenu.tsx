@@ -54,7 +54,7 @@ export default function ProfileMenu({ showReset = true }: { showReset?: boolean 
   };
 
   return (
-    <div className="fixed top-4 right-4 sm:top-5 sm:right-5 z-50">
+    <div className="absolute top-4 right-4 sm:fixed sm:top-5 sm:right-5 z-50">
       {/* Avatar button */}
       <button
         id="profile-menu-btn"
