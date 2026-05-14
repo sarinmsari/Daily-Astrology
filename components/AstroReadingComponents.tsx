@@ -134,7 +134,7 @@ export const RelationshipHarmonyGauge = ({
       <p className="text-sm sm:text-base text-foreground/80 leading-relaxed mb-6">
         {content}
       </p>
-      <div className="space-y-3">
+      {/* <div className="space-y-3">
         <div className="flex justify-between text-[10px] uppercase tracking-[0.2em] font-bold opacity-60">
           <span>Social Resonance</span>
           <span>{level}%</span>
@@ -147,7 +147,7 @@ export const RelationshipHarmonyGauge = ({
             className={cn("h-full rounded-full", style.accent)}
           />
         </div>
-      </div>
+      </div> */}
     </SectionWrapper>
   );
 };
@@ -167,23 +167,20 @@ export const CareerEnergyGauge = ({
       <p className="text-sm sm:text-base text-foreground/80 leading-relaxed mb-6">
         {content}
       </p>
-      <div className="space-y-3">
+      {/* <div className="space-y-3">
         <div className="flex justify-between text-[10px] uppercase tracking-[0.2em] font-bold opacity-60">
           <span>Celestial Drive</span>
           <span>{level}%</span>
         </div>
-        <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/5">
+        <div className="h-3 w-full bg-black/5 rounded-full overflow-hidden p-0.5 border border-black/5">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${level}%` }}
             transition={{ duration: 1.5, ease: "circOut" }}
-            className={cn(
-              "h-full rounded-full shadow-[0_0_15px_rgba(255,255,255,0.2)]",
-              style.accent,
-            )}
+            className={cn("h-full rounded-full", style.accent)}
           />
         </div>
-      </div>
+      </div> */}
     </SectionWrapper>
   );
 };
