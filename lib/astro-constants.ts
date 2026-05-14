@@ -1,45 +1,97 @@
 // ─── Nakshatras ──────────────────────────────────────────────────────────────
 export const NAKSHATRAS = [
-  "Ashwini (Aswathy)", "Bharani (Bharani)", "Krittika (Karthika)", "Rohini (Rohini)",
-  "Mrigashira (Makayiram)", "Ardra (Thiruvathira)", "Punarvasu (Punartham)", "Pushya (Pooyam)",
-  "Ashlesha (Ayilyam)", "Magha (Makam)", "Purva Phalguni (Pooram)", "Uttara Phalguni (Uthram)",
-  "Hasta (Atham)", "Chitra (Chithira)", "Swati (Chothi)", "Vishakha (Vishakham)",
-  "Anuradha (Anizham)", "Jyeshtha (Thrikketta)", "Mula (Moolam)", "Purva Ashadha (Pooradam)",
-  "Uttara Ashadha (Uthradam)", "Shravana (Thiruvonam)", "Dhanishta (Avittam)",
-  "Shatabhisha (Chathayam)", "Purva Bhadrapada (Pooruruttathy)", "Uttara Bhadrapada (Uthruttathy)",
+  "Ashwini (Aswathy)",
+  "Bharani (Bharani)",
+  "Krittika (Karthika)",
+  "Rohini (Rohini)",
+  "Mrigashira (Makayiram)",
+  "Ardra (Thiruvathira)",
+  "Punarvasu (Punartham)",
+  "Pushya (Pooyam)",
+  "Ashlesha (Ayilyam)",
+  "Magha (Makam)",
+  "Purva Phalguni (Pooram)",
+  "Uttara Phalguni (Uthram)",
+  "Hasta (Atham)",
+  "Chitra (Chithira)",
+  "Swati (Chothi)",
+  "Vishakha (Vishakham)",
+  "Anuradha (Anizham)",
+  "Jyeshtha (Thrikketta)",
+  "Mula (Moolam)",
+  "Purva Ashadha (Pooradam)",
+  "Uttara Ashadha (Uthradam)",
+  "Shravana (Thiruvonam)",
+  "Dhanishta (Avittam)",
+  "Shatabhisha (Chathayam)",
+  "Purva Bhadrapada (Pooruruttathy)",
+  "Uttara Bhadrapada (Uthruttathy)",
   "Revati (Revathi)",
 ];
 
 // ─── Rashis ───────────────────────────────────────────────────────────────────
 export const RASHIS = [
-  "Mesha (Aries)", "Vrishabha (Taurus)", "Mithuna (Gemini)", "Karka (Cancer)",
-  "Simha (Leo)", "Kanya (Virgo)", "Tula (Libra)", "Vrischika (Scorpio)",
-  "Dhanu (Sagittarius)", "Makara (Capricorn)", "Kumbha (Aquarius)", "Meena (Pisces)",
+  "Mesha (Aries)",
+  "Vrishabha (Taurus)",
+  "Mithuna (Gemini)",
+  "Karka (Cancer)",
+  "Simha (Leo)",
+  "Kanya (Virgo)",
+  "Tula (Libra)",
+  "Vrischika (Scorpio)",
+  "Dhanu (Sagittarius)",
+  "Makara (Capricorn)",
+  "Kumbha (Aquarius)",
+  "Meena (Pisces)",
 ];
 
 // ─── Rashi Lordships (traditional Vedic, 0=Mesha…11=Meena) ───────────────────
 // These are permanent astrological constants — not date-dependent.
 export const RASHI_LORDS: Record<number, string> = {
-  0:  "Mars",    // Mesha
-  1:  "Venus",   // Vrishabha
-  2:  "Mercury", // Mithuna
-  3:  "Moon",    // Karka
-  4:  "Sun",     // Simha
-  5:  "Mercury", // Kanya
-  6:  "Venus",   // Tula
-  7:  "Mars",    // Vrischika
-  8:  "Jupiter", // Dhanu
-  9:  "Saturn",  // Makara
-  10: "Saturn",  // Kumbha
+  0: "Mars", // Mesha
+  1: "Venus", // Vrishabha
+  2: "Mercury", // Mithuna
+  3: "Moon", // Karka
+  4: "Sun", // Simha
+  5: "Mercury", // Kanya
+  6: "Venus", // Tula
+  7: "Mars", // Vrischika
+  8: "Jupiter", // Dhanu
+  9: "Saturn", // Makara
+  10: "Saturn", // Kumbha
   11: "Jupiter", // Meena
 };
 
 // ─── Nakshatra Lords (Vimshottari Dasha sequence, 0-indexed) ─────────────────
 // Repeating sequence: Ketu, Venus, Sun, Moon, Mars, Rahu, Jupiter, Saturn, Mercury
 export const NAKSHATRA_LORDS: string[] = [
-  "Ketu", "Venus", "Sun", "Moon", "Mars", "Rahu", "Jupiter", "Saturn", "Mercury",
-  "Ketu", "Venus", "Sun", "Moon", "Mars", "Rahu", "Jupiter", "Saturn", "Mercury",
-  "Ketu", "Venus", "Sun", "Moon", "Mars", "Rahu", "Jupiter", "Saturn", "Mercury",
+  "Ketu",
+  "Venus",
+  "Sun",
+  "Moon",
+  "Mars",
+  "Rahu",
+  "Jupiter",
+  "Saturn",
+  "Mercury",
+  "Ketu",
+  "Venus",
+  "Sun",
+  "Moon",
+  "Mars",
+  "Rahu",
+  "Jupiter",
+  "Saturn",
+  "Mercury",
+  "Ketu",
+  "Venus",
+  "Sun",
+  "Moon",
+  "Mars",
+  "Rahu",
+  "Jupiter",
+  "Saturn",
+  "Mercury",
 ];
 
 // ─── Planet Dignity Definitions ───────────────────────────────────────────────
@@ -52,13 +104,33 @@ type PlanetDignityDef = {
 };
 
 export const PLANET_DIGNITY_TABLE: Record<string, PlanetDignityDef> = {
-  Sun:     { exaltation: 0,  debilitation: 6,  moolatrikona: [4],     ownSign: [4] },
-  Moon:    { exaltation: 1,  debilitation: 7,  moolatrikona: [3],     ownSign: [3] },
-  Mars:    { exaltation: 9,  debilitation: 3,  moolatrikona: [0],     ownSign: [0, 7] },
-  Mercury: { exaltation: 5,  debilitation: 11, moolatrikona: [5],     ownSign: [2, 5] },
-  Jupiter: { exaltation: 3,  debilitation: 9,  moolatrikona: [8],     ownSign: [8, 11] },
-  Venus:   { exaltation: 11, debilitation: 5,  moolatrikona: [6],     ownSign: [1, 6] },
-  Saturn:  { exaltation: 6,  debilitation: 0,  moolatrikona: [10],    ownSign: [9, 10] },
+  Sun: { exaltation: 0, debilitation: 6, moolatrikona: [4], ownSign: [4] },
+  Moon: { exaltation: 1, debilitation: 7, moolatrikona: [3], ownSign: [3] },
+  Mars: { exaltation: 9, debilitation: 3, moolatrikona: [0], ownSign: [0, 7] },
+  Mercury: {
+    exaltation: 5,
+    debilitation: 11,
+    moolatrikona: [5],
+    ownSign: [2, 5],
+  },
+  Jupiter: {
+    exaltation: 3,
+    debilitation: 9,
+    moolatrikona: [8],
+    ownSign: [8, 11],
+  },
+  Venus: {
+    exaltation: 11,
+    debilitation: 5,
+    moolatrikona: [6],
+    ownSign: [1, 6],
+  },
+  Saturn: {
+    exaltation: 6,
+    debilitation: 0,
+    moolatrikona: [10],
+    ownSign: [9, 10],
+  },
 };
 
 /**
@@ -75,34 +147,37 @@ export function computeDignity(planetName: string, rashiIndex: number): string {
   return "Neutral";
 }
 
-// ─── Sade Sati & Special Saturn Transits ─────────────────────────────────────
+// ─── Shani Transits (Sade Sati, Dhaiya, etc.) ─────────────────────────────────────
 
-export type SadeSatiPhase =
+export type ShaniTransitPhase =
   | "Pre-Sade Sati"
   | "Peak Sade Sati"
   | "Post-Sade Sati (Concluding)"
   | "Kantaka Shani (4th)"
+  | "Kantaka Shani (7th)"
+  | "Kantaka Shani (10th)"
   | "Ashtama Shani (8th)"
   | "None";
 
-export type SadeSatiResult = {
-  phase: SadeSatiPhase;
+export type ShaniTransitResult = {
+  phase: ShaniTransitPhase;
   houseFromMoon: number; // Saturn's house number counted from natal Moon (1–12)
   description: string;
 };
 
 /**
- * Dynamically computes the Sade Sati / Kantaka Shani phase for ANY date.
+ * Dynamically computes the Shani transit phase for ANY date.
  * Both indices come from live Swiss Ephemeris calculations — nothing is hardcoded.
  *
  * @param natalMoonRashiIndex - from natal chart (0–11)
  * @param transitSaturnRashiIndex - from transit chart computed for the reading date (0–11)
  */
-export function computeSadeSatiPhase(
+export function computeShaniTransitPhase(
   natalMoonRashiIndex: number,
-  transitSaturnRashiIndex: number
-): SadeSatiResult {
-  const houseFromMoon = ((transitSaturnRashiIndex - natalMoonRashiIndex + 12) % 12) + 1;
+  transitSaturnRashiIndex: number,
+): ShaniTransitResult {
+  const houseFromMoon =
+    ((transitSaturnRashiIndex - natalMoonRashiIndex + 12) % 12) + 1;
 
   switch (houseFromMoon) {
     case 12:
@@ -131,7 +206,21 @@ export function computeSadeSatiPhase(
         phase: "Kantaka Shani (4th)",
         houseFromMoon,
         description:
-          "Kantaka Shani is active — Saturn transits your 4th from natal Moon, pressuring home environment, emotional security, property matters, and the maternal relationship.",
+          "Ardh-Ashtama Shani is active — Saturn transits your 4th from natal Moon, pressuring home environment, emotional security, property matters, and the maternal relationship.",
+      };
+    case 7:
+      return {
+        phase: "Kantaka Shani (7th)",
+        houseFromMoon,
+        description:
+          "Kantaka Shani is active — Saturn transits your 7th from natal Moon, bringing challenges and necessary restructuring to partnerships, marriage, and public image.",
+      };
+    case 10:
+      return {
+        phase: "Kantaka Shani (10th)",
+        houseFromMoon,
+        description:
+          "Kantaka Shani is active — Saturn transits your 10th from natal Moon, demanding intense focus, discipline, and patience in career and social standing.",
       };
     case 8:
       return {
@@ -144,7 +233,7 @@ export function computeSadeSatiPhase(
       return {
         phase: "None",
         houseFromMoon,
-        description: `Saturn transits the ${houseFromMoon}th house from your natal Moon — no Sade Sati, Kantaka, or Ashtama Shani in effect for this period.`,
+        description: `Saturn transits the ${houseFromMoon}th house from your natal Moon — an auspicious or neutral transit with no major Shani Dosha in effect for this period.`,
       };
   }
 }

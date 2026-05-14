@@ -5,10 +5,31 @@ import {
   RASHI_LORDS,
   NAKSHATRA_LORDS,
   computeDignity,
-  computeSadeSatiPhase,
+  computeShaniTransitPhase,
 } from "./astro-constants";
 
+
+
+// ─── Mutex for Thread Safety ──────────────────────────────────────────────────
+// swisseph-wasm utilizes internal C-level globals and WASM memory. 
+// Concurrent execution in a serverless function causes memory corruption
+// and incorrect calculations. We strictly serialize access per instance.
+class Mutex {
+  private mutex = Promise.resolve();
+
+  lock(): Promise<() => void> {
+    let begin: (unlock: () => void) => void = () => {};
+    this.mutex = this.mutex.then(() => new Promise(begin));
+    return new Promise((res) => {
+      begin = res;
+    });
+  }
+}
+
+const astroMutex = new Mutex();
+
 // ─── Types ────────────────────────────────────────────────────────────────────
+
 
 export type PlanetPosition = {
   name: string;
@@ -35,6 +56,7 @@ export const calculateBirthStar = async (
   _lat: number,
   _lng: number
 ) => {
+  const unlock = await astroMutex.lock();
   const swe = new SwissEph();
   try {
     await swe.initSwissEph();
@@ -71,6 +93,7 @@ export const calculateBirthStar = async (
     throw error;
   } finally {
     swe.close();
+    unlock();
   }
 };
 
@@ -82,6 +105,7 @@ export const calculateFullChart = async (
   lng: number,
   withDignity = false
 ): Promise<FullChart> => {
+  const unlock = await astroMutex.lock();
   const swe = new SwissEph();
   try {
     await swe.initSwissEph();
@@ -152,6 +176,7 @@ export const calculateFullChart = async (
     throw error;
   } finally {
     swe.close();
+    unlock();
   }
 };
 
@@ -191,10 +216,10 @@ export function getDerivedFacts(
   const transitJupiter = transitChart.positions.find((p) => p.name === "Jupiter");
   const transitRahu  = transitChart.positions.find((p) => p.name === "Rahu");
 
-  // ── Sade Sati phase (fully dynamic — ephemeris-driven, any date) ────────────
-  const sadeSati =
+  // ── Shani Transit Phase (fully dynamic — ephemeris-driven, any date) ────────────
+  const shaniTransit =
     natalMoon && transitSaturn
-      ? computeSadeSatiPhase(natalMoon.rashiIndex, transitSaturn.rashiIndex)
+      ? computeShaniTransitPhase(natalMoon.rashiIndex, transitSaturn.rashiIndex)
       : { phase: "None" as const, houseFromMoon: 0, description: "" };
 
   // ── House positions of key transit planets (counted from natal Moon) ────────
@@ -215,10 +240,10 @@ export function getDerivedFacts(
     nakshatraLord,
     planetDignitySummary,
 
-    // Sade Sati (dynamically computed from both ephemeris results)
-    sadeSatiPhase: sadeSati.phase,
-    sadeSatiDescription: sadeSati.description,
-    sadeSatiHouseFromMoon: sadeSati.houseFromMoon,
+    // Shani Transit (dynamically computed from both ephemeris results)
+    shaniTransitPhase: shaniTransit.phase,
+    shaniTransitDescription: shaniTransit.description,
+    shaniTransitHouseFromMoon: shaniTransit.houseFromMoon,
 
     // Transit positions (for easy string interpolation in prompt)
     natalMoonRashi:     natalMoon?.rashi      ?? "",

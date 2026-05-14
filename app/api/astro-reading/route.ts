@@ -112,9 +112,9 @@ ${transitChart.positions
 ═══════════════════════════════════════════════════════════════
 VERIFIED VEDIC ANALYSIS (Pre-computed — DO NOT contradict)
 ═══════════════════════════════════════════════════════════════
-Sade Sati / Saturn Status:
-  Phase:  ${derived.sadeSatiPhase}
-  Detail: ${derived.sadeSatiDescription}
+Shani Transit Status:
+  Phase:  ${derived.shaniTransitPhase}
+  Detail: ${derived.shaniTransitDescription}
 
 Transit Moon: ${derived.moonHouseFromNatal}th from natal Moon (${derived.natalMoonRashi})
 Transit Jupiter: ${derived.jupiterHouseFromNatal}th from natal Moon
@@ -134,7 +134,7 @@ CRITICAL INSTRUCTIONS
 ═══════════════════════════════════════════════════════════════
 1. All chart data above is from a certified Swiss Ephemeris engine.
    Use these positions EXACTLY. Do NOT override with your own assumptions.
-2. Accept Sade Sati phase, house positions, and dignity labels as given.
+2. Accept Shani transit phase, house positions, and dignity labels as given.
 3. Every section must reference specific planets, rashis, and house numbers.
 4. Write the ENTIRE reading in ${language}.
 
