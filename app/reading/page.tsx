@@ -28,6 +28,7 @@ import {
   TransitSummary,
   OracleAdvice,
 } from "@/components/AstroReadingComponents";
+import InstallAppButton from "@/components/InstallAppButton";
 
 const ReadingSchema = z.object({
   mind: z.object({
@@ -450,11 +451,10 @@ function ReadingContent() {
             >
               <div className="space-y-2">
                 <h3 className="font-serif font-black text-accent text-lg">
-                  Save this journey?
+                  Save your birth details?
                 </h3>
                 <p className="text-muted-foreground text-xs font-body">
-                  Sign in to associate this celestial reading with your profile
-                  and access it anytime.
+                  Sign in to save your birth profile for quick daily astrology.
                 </p>
               </div>
               <button
@@ -462,10 +462,12 @@ function ReadingContent() {
                 className="inline-flex items-center gap-3 px-8 py-3 bg-accent text-accent-foreground rounded-full cursor-pointer text-xs font-black tracking-widest transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 <LogIn className="w-4 h-4" />
-                SignIn with google
+                Sign In with Google
               </button>
             </motion.div>
           )}
+
+          {!isLoading && <InstallAppButton />}
 
           {!isLoading && (
             <motion.footer

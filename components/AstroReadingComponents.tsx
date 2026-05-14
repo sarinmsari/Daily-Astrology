@@ -113,7 +113,7 @@ export const MindEmotionCard = ({
   mood?: AstroMood;
 }) => (
   <SectionWrapper title="Mind & Emotion" icon={Brain} mood={mood}>
-    <p className="text-foreground/90 leading-relaxed font-serif text-sm sm:text-lg italic">
+    <p className="text-foreground/90 leading-relaxed font-serif text-sm sm:text-base italic">
       {content}
     </p>
   </SectionWrapper>
