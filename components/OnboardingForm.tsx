@@ -278,7 +278,7 @@ export default function OnboardingForm() {
                     className="w-4 h-4"
                     alt="Google"
                   />
-                  Sign in to save your readings
+                  Sign in with Google
                 </button>
               </div>
             )}

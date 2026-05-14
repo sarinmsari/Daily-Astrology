@@ -12,6 +12,7 @@ import {
   Zap,
 } from "lucide-react";
 import Link from "next/link";
+import { triggerHaptic } from "@/lib/haptics";
 
 export default function LandingPage() {
   return (
@@ -82,6 +83,7 @@ export default function LandingPage() {
         >
           <Link
             href="/onboarding"
+            onClick={() => triggerHaptic()}
             className="group relative inline-flex items-center justify-center gap-3 px-10 py-5 bg-accent text-accent-foreground rounded-full text-sm font-black tracking-[0.2em] transition-all hover:scale-105 active:scale-95 shadow-2xl saffron-glow overflow-hidden"
           >
             <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />

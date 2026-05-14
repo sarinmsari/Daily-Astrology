@@ -37,10 +37,13 @@ export const metadata: Metadata = {
     locale: "en_US",
     type: "website",
   },
+  manifest: "/manifest.webmanifest",
 };
 
 import { AuthProvider } from "@/context/AuthContext";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
+import PWARegister from "@/components/PWARegister";
+import Script from "next/script";
 
 export default function RootLayout({
   children,
@@ -53,8 +56,17 @@ export default function RootLayout({
       className={`${eczar.variable} ${spectral.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-body">
+        <Script id="pwa-catch" strategy="beforeInteractive">
+          {`
+            window.addEventListener('beforeinstallprompt', (e) => {
+              e.preventDefault();
+              window.deferredPWAInstallPrompt = e;
+            });
+          `}
+        </Script>
         <AuthProvider>{children}</AuthProvider>
         <GoogleAnalytics />
+        <PWARegister />
       </body>
     </html>
   );
