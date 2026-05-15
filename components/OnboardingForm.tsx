@@ -126,7 +126,33 @@ export default function OnboardingForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [dateError, setDateError] = useState<string | null>(null);
   const [uid, setUid] = useState<string>("");
+
+  const maxDate = new Date();
+  maxDate.setFullYear(maxDate.getFullYear() - 13);
+  const maxDateStr = maxDate.toISOString().split("T")[0];
+
+  const validateDate = (dateStr: string) => {
+    if (!dateStr) return null;
+    const selectedDate = new Date(dateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (selectedDate > today) {
+      return "Birth date cannot be in the future.";
+    }
+
+    const minAgeDate = new Date();
+    minAgeDate.setFullYear(minAgeDate.getFullYear() - 13);
+    minAgeDate.setHours(0, 0, 0, 0);
+
+    if (selectedDate > minAgeDate) {
+      return "You must be at least 13 years old.";
+    }
+
+    return null;
+  };
 
   const selectCity = (item: any) => {
     triggerHaptic(10);
@@ -346,12 +372,25 @@ export default function OnboardingForm() {
                   </label>
                   <input
                     type="date"
-                    className="w-full bg-black/5 border border-black/10 rounded-2xl px-6 py-4 outline-none focus:border-accent/40 focus:bg-black/10 transition-all text-center"
+                    max={maxDateStr}
+                    className={cn(
+                      "w-full bg-black/5 border rounded-2xl px-6 py-4 outline-none transition-all text-center",
+                      dateError
+                        ? "border-red-400/50 focus:border-red-400"
+                        : "border-black/10 focus:border-accent/40 focus:bg-black/10",
+                    )}
                     value={formData.birthDate}
-                    onChange={(e) =>
-                      setFormData({ ...formData, birthDate: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData({ ...formData, birthDate: val });
+                      setDateError(validateDate(val));
+                    }}
                   />
+                  {dateError && (
+                    <p className="text-red-400 text-[10px] text-center mt-1 font-bold tracking-wider uppercase">
+                      {dateError}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase tracking-[0.3em] font-bold text-accent/60 flex items-center gap-2 ml-4">
@@ -480,12 +519,25 @@ export default function OnboardingForm() {
                   </label>
                   <input
                     type="date"
-                    className="w-full bg-black/5 border border-black/10 rounded-2xl px-6 py-4 outline-none focus:border-accent/40 focus:bg-black/10 transition-all text-center"
+                    max={maxDateStr}
+                    className={cn(
+                      "w-full bg-black/5 border rounded-2xl px-6 py-4 outline-none transition-all text-center",
+                      dateError
+                        ? "border-red-400/50 focus:border-red-400"
+                        : "border-black/10 focus:border-accent/40 focus:bg-black/10",
+                    )}
                     value={formData.birthDate}
-                    onChange={(e) =>
-                      setFormData({ ...formData, birthDate: e.target.value })
-                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData({ ...formData, birthDate: val });
+                      setDateError(validateDate(val));
+                    }}
                   />
+                  {dateError && (
+                    <p className="text-red-400 text-[10px] text-center mt-1 animate-pulse font-bold tracking-wider uppercase">
+                      {dateError}
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -493,9 +545,10 @@ export default function OnboardingForm() {
             <button
               onClick={flowMethod === "manual" ? handleSubmit : nextStep}
               disabled={
-                flowMethod === "calculate"
+                !!dateError ||
+                (flowMethod === "calculate"
                   ? !formData.birthDate || !formData.birthTime
-                  : !formData.nakshatra || !formData.birthDate
+                  : !formData.nakshatra || !formData.birthDate)
               }
               className="w-full bg-accent hover:bg-accent/90 disabled:opacity-30 cursor-pointer text-accent-foreground font-serif font-black py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl active:scale-[0.98]"
             >
