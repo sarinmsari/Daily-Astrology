@@ -40,6 +40,11 @@ export async function saveUserOnboarding(formData: {
     const hasValidCoords = formData.lat !== 0 || formData.lng !== 0;
 
     const birthDateTime = new Date(`${formData.birthDate}T${formData.birthTime}:00+05:30`);
+    
+    // ── Ensure birth date is not in the future ──────────────────────────────
+    if (birthDateTime > new Date()) {
+      throw new Error("Birth date cannot be in the future.");
+    }
 
     if (!finalNakshatra) {
       if (!hasValidCoords) {
