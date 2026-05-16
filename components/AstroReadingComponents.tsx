@@ -52,7 +52,7 @@ const SectionWrapper = ({
 
 export const MindEmotionCard = ({ content }: { content: string }) => (
   <SectionWrapper title="Mind & Emotion" icon={Brain}>
-    <p className="leading-relaxed font-serif text-base sm:text-lg text-foreground/80 italic">
+    <p className="text-base sm:text-lg text-foreground/70 leading-relaxed">
       {content}
     </p>
   </SectionWrapper>
@@ -67,7 +67,7 @@ export const RelationshipHarmonyGauge = ({
 }) => {
   return (
     <SectionWrapper title="Relationship Harmony" icon={Heart}>
-      <p className="text-sm sm:text-base text-foreground/70 leading-relaxed mb-6">
+      <p className="text-base sm:text-lg text-foreground/70 leading-relaxed">
         {content}
       </p>
     </SectionWrapper>
@@ -83,7 +83,7 @@ export const CareerEnergyGauge = ({
 }) => {
   return (
     <SectionWrapper title="Career & Energy" icon={Briefcase}>
-      <p className="text-sm sm:text-base text-foreground/70 leading-relaxed mb-6">
+      <p className="text-base sm:text-lg text-foreground/70 leading-relaxed">
         {content}
       </p>
     </SectionWrapper>
@@ -92,7 +92,7 @@ export const CareerEnergyGauge = ({
 
 export const WealthAbundanceCard = ({ content }: { content: string }) => (
   <SectionWrapper title="Wealth & Abundance" icon={Coins}>
-    <p className="text-sm sm:text-base text-foreground/80 leading-relaxed italic">
+    <p className="text-base sm:text-lg text-foreground/70 leading-relaxed">
       {content}
     </p>
   </SectionWrapper>
@@ -100,7 +100,7 @@ export const WealthAbundanceCard = ({ content }: { content: string }) => (
 
 export const HealthVitalityCard = ({ content }: { content: string }) => (
   <SectionWrapper title="Health & Vitality" icon={Activity}>
-    <p className="text-sm sm:text-base text-foreground/80 leading-relaxed italic">
+    <p className="text-base sm:text-lg text-foreground/70 leading-relaxed">
       {content}
     </p>
   </SectionWrapper>
@@ -122,7 +122,7 @@ export const OracleAdvice = ({ content }: { content: string }) => (
           The Oracle Speaks
         </span>
       </div>
-      <p className="text-sm sm:text-base font-serif font-semibold leading-relaxed tracking-tight">
+      <p className="text-base sm:text-lg font-serif font-semibold leading-relaxed tracking-tight">
         {content}
       </p>
     </div>
@@ -178,7 +178,7 @@ export const LuckyElements = ({
 export const TransitSummary = ({ content }: { content: string }) => (
   <SectionWrapper title="Cosmic Transit" icon={AlertCircle}>
     <div className="relative">
-      <p className="text-sm sm:text-base leading-relaxed font-medium text-foreground/70 italic">
+      <p className="text-base sm:text-lg text-foreground/70 leading-relaxed">
         {content}
       </p>
     </div>

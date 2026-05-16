@@ -216,7 +216,8 @@ export default function SpeechPlayer({ reading, language }: SpeechPlayerProps) {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  if (!isSupported || !reading) return null;  if (!voiceAvailable) return null;
+  if (!isSupported || !reading) return null;
+  if (!voiceAvailable) return null;
 
   const showListenText = !isPlaying && elapsedTime === 0;
 
@@ -234,21 +235,21 @@ export default function SpeechPlayer({ reading, language }: SpeechPlayerProps) {
             : "bg-accent/5 border-accent/20",
         )}
       >
-        <div className="w-full flex flex-col sm:flex-row items-center justify-between p-6 gap-6">
+        <div className="w-full flex flex-row items-center justify-between p-5 gap-6">
           <div className="flex items-center gap-4 flex-1">
             <button
               onClick={isPlaying ? stopSpeech : () => startSpeech()}
               className={cn(
-                "p-4 rounded-full transition-all duration-500 hover:scale-105 active:scale-95 cursor-pointer",
+                "p-3 rounded-full transition-all duration-500 hover:scale-105 active:scale-95 cursor-pointer",
                 isPlaying
                   ? "bg-accent text-accent-foreground"
                   : "bg-accent/10 text-accent",
               )}
             >
               {isPlaying ? (
-                <Square className="w-6 h-6 fill-current" />
+                <Square className="w-5 h-5 fill-current" />
               ) : (
-                <Play className="w-6 h-6 fill-current" />
+                <Play className="w-5 h-5 fill-current" />
               )}
             </button>
 

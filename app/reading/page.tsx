@@ -282,7 +282,7 @@ function ReadingContent() {
       >
         <header className="text-center space-y-6 px-2 sm:px-4">
           <div className="space-y-2">
-            <h1 className="text-3xl font-serif font-black tracking-tighter text-accent leading-none">
+            <h1 className="text-3xl font-serif font-black tracking-tighter text-accent leading-normal">
               Day Astrology Reading for{" "}
               <span className="capitalize">{name}</span>
             </h1>
