@@ -10,37 +10,26 @@ import { z } from "zod";
 export const runtime = "edge";
 export const maxDuration = 30;
 
-const MoodSchema = z.enum([
-  "Mystical",
-  "Dynamic",
-  "Warning",
-  "Balanced",
-  "Success",
-]);
-
 const ReadingSchema = z.object({
-  mind: z.object({ mood: MoodSchema, content: z.string() }),
+  mind: z.object({ content: z.string() }),
   career: z.object({
-    mood: MoodSchema,
     level: z.number().min(1).max(100),
     content: z.string(),
   }),
-  wealth: z.object({ mood: MoodSchema, content: z.string() }),
+  wealth: z.object({ content: z.string() }),
   relationship: z.object({
-    mood: MoodSchema,
     level: z.number().min(1).max(100),
     content: z.string(),
   }),
-  health: z.object({ mood: MoodSchema, content: z.string() }),
+  health: z.object({ content: z.string() }),
   lucky: z.object({
-    mood: MoodSchema,
     color: z.string(),
     number: z.string(),
     direction: z.string(),
     reason: z.string(),
   }),
-  transit: z.object({ mood: MoodSchema, content: z.string() }),
-  oracle: z.object({ mood: MoodSchema, content: z.string() }),
+  transit: z.object({ content: z.string() }),
+  oracle: z.object({ content: z.string() }),
 });
 
 export async function POST(req: Request) {
@@ -152,7 +141,6 @@ AREAS TO COVER
 7. Transit Summary: Key Gochara impacts for this specific chart.
 8. Oracle Advice: One powerful, chart-specific closing directive.
 
-Mood: Mystical=Spiritual | Dynamic=Action | Warning=Rahu/Retro | Balanced=Harmony | Success=Auspicious
 
 ⚠ LENGTH CONSTRAINT: Each 'content' field must be exactly 3–4 sentences. No more.
    All 8 sections must be fully completed within a single response.

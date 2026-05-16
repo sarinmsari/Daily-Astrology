@@ -40,7 +40,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="inline-flex items-center gap-3 px-6 py-2 vedic-glass rounded-full border border-accent/30 saffron-glow mb-4"
+            className="inline-flex items-center gap-3 px-6 py-2 rounded-full border border-accent/30 mb-4"
           >
             <span className="font-serif text-xs font-black tracking-[0.3em] text-accent uppercase">
               {new Date().toLocaleDateString("en-IN", {
@@ -84,7 +84,7 @@ export default function LandingPage() {
           <Link
             href="/onboarding"
             onClick={() => triggerHaptic()}
-            className="group relative inline-flex items-center justify-center gap-3 px-10 py-5 bg-accent text-accent-foreground rounded-full text-sm font-black tracking-[0.2em] transition-all hover:scale-105 active:scale-95 shadow-2xl saffron-glow overflow-hidden"
+            className="group relative inline-flex items-center justify-center gap-3 px-10 py-5 bg-accent text-accent-foreground rounded-full text-sm font-black tracking-[0.2em] transition-all hover:scale-105 active:scale-95 shadow-2xl overflow-hidden"
           >
             <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
             <span className="relative">KNOW MY DAY</span>
@@ -162,10 +162,7 @@ function FeatureCard({
   description: string;
 }) {
   return (
-    <motion.div
-      whileHover={{ y: -5 }}
-      className="p-8 rounded-[2rem] vedic-glass border border-accent/10 space-y-4 text-center"
-    >
+    <div className="p-8 rounded-[2rem] bg-background border border-accent/10 space-y-4 text-center">
       <div className="inline-flex p-4 bg-accent/5 rounded-2xl text-accent mb-2">
         {icon}
       </div>
@@ -173,6 +170,6 @@ function FeatureCard({
       <p className="text-sm text-muted-foreground font-body leading-relaxed">
         {description}
       </p>
-    </motion.div>
+    </div>
   );
 }
