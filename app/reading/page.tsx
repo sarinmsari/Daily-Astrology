@@ -29,43 +29,36 @@ import {
   OracleAdvice,
 } from "@/components/AstroReadingComponents";
 import InstallAppButton from "@/components/InstallAppButton";
+import SpeechPlayer from "@/components/SpeechPlayer";
 
 const ReadingSchema = z.object({
   mind: z.object({
-    mood: z.string(),
     content: z.string(),
   }),
   career: z.object({
-    mood: z.string(),
     level: z.number(),
     content: z.string(),
   }),
   wealth: z.object({
-    mood: z.string(),
     content: z.string(),
   }),
   relationship: z.object({
-    mood: z.string(),
     level: z.number(),
     content: z.string(),
   }),
   health: z.object({
-    mood: z.string(),
     content: z.string(),
   }),
   lucky: z.object({
-    mood: z.string(),
     color: z.string(),
     number: z.string(),
     direction: z.string(),
     reason: z.string(),
   }),
   transit: z.object({
-    mood: z.string(),
     content: z.string(),
   }),
   oracle: z.object({
-    mood: z.string(),
     content: z.string(),
   }),
 });
@@ -289,7 +282,7 @@ function ReadingContent() {
       >
         <header className="text-center space-y-6 px-2 sm:px-4">
           <div className="space-y-2">
-            <h1 className="text-3xl font-serif font-black tracking-tighter text-accent leading-none">
+            <h1 className="text-3xl font-serif font-black tracking-tighter text-accent leading-normal">
               Day Astrology Reading for{" "}
               <span className="capitalize">{name}</span>
             </h1>
@@ -301,7 +294,7 @@ function ReadingContent() {
             </p>
           </div>
 
-          <div className="inline-flex items-center gap-3 px-8 py-3 vedic-glass rounded-full border border-accent/30 saffron-glow">
+          <div className="inline-flex items-center gap-3 px-8 py-3  rounded-full border border-accent/30">
             <span className="font-serif text-xs font-black tracking-[0.3em] text-accent">
               {new Date().toLocaleDateString("en-IN", {
                 day: "numeric",
@@ -387,37 +380,29 @@ function ReadingContent() {
 
           <AnimatePresence mode="popLayout">
             <div className="grid grid-cols-1 gap-10 md:gap-16">
+              {reading && !isLoading && (
+                <SpeechPlayer reading={reading} language={language} />
+              )}
               {reading?.mind?.content && (
-                <MindEmotionCard
-                  content={reading.mind.content}
-                  mood={reading.mind.mood as any}
-                />
+                <MindEmotionCard content={reading.mind.content} />
               )}
               {reading?.relationship?.content && (
                 <RelationshipHarmonyGauge
                   content={reading.relationship.content}
                   level={reading.relationship.level || 0}
-                  mood={reading.relationship.mood as any}
                 />
               )}
               {reading?.career?.content && (
                 <CareerEnergyGauge
                   content={reading.career.content}
                   level={reading.career.level || 0}
-                  mood={reading.career.mood as any}
                 />
               )}
               {reading?.wealth?.content && (
-                <WealthAbundanceCard
-                  content={reading.wealth.content}
-                  mood={reading.wealth.mood as any}
-                />
+                <WealthAbundanceCard content={reading.wealth.content} />
               )}
               {reading?.health?.content && (
-                <HealthVitalityCard
-                  content={reading.health.content}
-                  mood={reading.health.mood as any}
-                />
+                <HealthVitalityCard content={reading.health.content} />
               )}
               {reading?.lucky?.reason && (
                 <LuckyElements
@@ -425,20 +410,13 @@ function ReadingContent() {
                   number={reading.lucky.number || ""}
                   direction={reading.lucky.direction || ""}
                   reason={reading.lucky.reason}
-                  mood={reading.lucky.mood as any}
                 />
               )}
               {reading?.transit?.content && (
-                <TransitSummary
-                  content={reading.transit.content}
-                  mood={reading.transit.mood as any}
-                />
+                <TransitSummary content={reading.transit.content} />
               )}
               {reading?.oracle?.content && (
-                <OracleAdvice
-                  content={reading.oracle.content}
-                  mood={reading.oracle.mood as any}
-                />
+                <OracleAdvice content={reading.oracle.content} />
               )}
             </div>
           </AnimatePresence>

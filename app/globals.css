@@ -57,17 +57,6 @@ h1, h2, h3, h4, .font-serif {
   letter-spacing: -0.02em; /* Eczar looks better with tighter spacing */
 }
 
-.vedic-glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(198, 156, 44, 0.2);
-  box-shadow: 0 8px 32px 0 rgba(198, 156, 44, 0.1);
-}
-
-.saffron-glow {
-  box-shadow: 0 0 30px rgba(198, 156, 44, 0.1);
-}
-
 @layer base {
   * {
     @apply border-black/5;
