@@ -68,6 +68,108 @@ export default function SpeechPlayer({ reading, language }: SpeechPlayerProps) {
   const [totalTime, setTotalTime] = useState(0);
   const currentWordIndexRef = useRef(0);
 
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setElapsedTime((prev) => {
+          if (prev >= totalTime && totalTime > 0) return prev;
+          return prev + 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying, totalTime]);
+
+  const silentAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Initialize a silent loop audio file to prevent background suspension on mobile
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      silentAudioRef.current = new Audio(
+        "data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBIAAAABAAEAQB8AAEAfAAABAAgAAABmYWN0BAAAAAAAAABkYXRhAAAAAA=="
+      );
+      silentAudioRef.current.loop = true;
+    }
+    return () => {
+      if (silentAudioRef.current) {
+        silentAudioRef.current.pause();
+      }
+    };
+  }, []);
+
+  // Sync state with lock screen Media Session API
+  useEffect(() => {
+    if (typeof window === "undefined" || !("mediaSession" in navigator)) return;
+
+    if (isPlaying) {
+      navigator.mediaSession.playbackState = "playing";
+      
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: "Daily Astrology Reading",
+        artist: "AstroApp",
+        album: `${language} Reading`,
+        artwork: [
+          { src: "/favicon.ico", sizes: "32x32", type: "image/x-icon" },
+        ],
+      });
+
+      if ("setPositionState" in navigator.mediaSession) {
+        try {
+          navigator.mediaSession.setPositionState({
+            duration: totalTime || 1,
+            playbackRate: 1.0,
+            position: Math.min(elapsedTime, totalTime),
+          });
+        } catch (e) {
+          console.warn("Failed to set MediaSession position state:", e);
+        }
+      }
+    } else {
+      navigator.mediaSession.playbackState = "paused";
+    }
+  }, [isPlaying, language, elapsedTime, totalTime]);
+
+  // Set up lock screen controls (Media Session Actions)
+  useEffect(() => {
+    if (typeof window === "undefined" || !("mediaSession" in navigator)) return;
+
+    navigator.mediaSession.setActionHandler("play", () => {
+      const fullText = getFullText();
+      const totalWords = fullText.split(/\s+/).length;
+      const targetWordIndex = Math.floor((elapsedTime / (totalTime || 1)) * totalWords) || 0;
+      startSpeech(targetWordIndex);
+    });
+
+    navigator.mediaSession.setActionHandler("pause", () => {
+      window.speechSynthesis.cancel();
+      setIsPlaying(false);
+      silentAudioRef.current?.pause();
+    });
+
+    navigator.mediaSession.setActionHandler("stop", () => {
+      stopSpeech();
+    });
+
+    navigator.mediaSession.setActionHandler("seekbackward", () => {
+      handleSeek(-10);
+    });
+
+    navigator.mediaSession.setActionHandler("seekforward", () => {
+      handleSeek(10);
+    });
+
+    return () => {
+      if ("mediaSession" in navigator) {
+        navigator.mediaSession.setActionHandler("play", null);
+        navigator.mediaSession.setActionHandler("pause", null);
+        navigator.mediaSession.setActionHandler("stop", null);
+        navigator.mediaSession.setActionHandler("seekbackward", null);
+        navigator.mediaSession.setActionHandler("seekforward", null);
+      }
+    };
+  }, [elapsedTime, totalTime, reading, language]);
+
   const getFullText = () => {
     if (!reading) return "";
     const contents = [
@@ -94,6 +196,10 @@ export default function SpeechPlayer({ reading, language }: SpeechPlayerProps) {
     setProgress(0);
     setElapsedTime(0);
     currentWordIndexRef.current = 0;
+    silentAudioRef.current?.pause();
+    if (silentAudioRef.current) {
+      silentAudioRef.current.currentTime = 0;
+    }
   };
 
   const startSpeech = (startWordIndex = 0) => {
@@ -144,6 +250,12 @@ export default function SpeechPlayer({ reading, language }: SpeechPlayerProps) {
         accumulatedWords += chunkWords;
       }
 
+      const initialElapsed = Math.min(
+        Math.ceil((wordsReadBeforeCurrentChunk / totalWords) * estimatedTotalSeconds),
+        estimatedTotalSeconds
+      );
+      setElapsedTime(initialElapsed);
+
       const speakNextChunk = () => {
         if (currentChunkIndex >= chunks.length) {
           setIsPlaying(false);
@@ -167,17 +279,21 @@ export default function SpeechPlayer({ reading, language }: SpeechPlayerProps) {
             const totalWordsRead =
               wordsReadBeforeCurrentChunk + wordsInCurrentChunkRead;
             currentWordIndexRef.current = totalWordsRead;
-
-            const currentElapsed = Math.min(
-              Math.ceil((totalWordsRead / totalWords) * estimatedTotalSeconds),
-              estimatedTotalSeconds,
-            );
-            setElapsedTime(currentElapsed);
+            // Removed setElapsedTime here as Android Chrome often fails to fire this.
+            // It is handled by setInterval and synced in onend.
           }
         };
 
         utterance.onend = () => {
           wordsReadBeforeCurrentChunk += chunkText.split(/\s+/).length;
+          
+          // Sync logical time when chunk ends
+          const logicalElapsed = Math.min(
+            Math.ceil((wordsReadBeforeCurrentChunk / totalWords) * estimatedTotalSeconds),
+            estimatedTotalSeconds
+          );
+          setElapsedTime((prev) => Math.max(prev, logicalElapsed));
+
           currentChunkIndex++;
           speakNextChunk();
         };
@@ -193,6 +309,11 @@ export default function SpeechPlayer({ reading, language }: SpeechPlayerProps) {
       };
 
       setIsPlaying(true);
+      silentAudioRef.current?.play().catch((err) => {
+        if (err.name !== "AbortError") {
+          console.error("Silent audio autoplay prevented:", err);
+        }
+      });
       speakNextChunk();
     }, 100);
   };
