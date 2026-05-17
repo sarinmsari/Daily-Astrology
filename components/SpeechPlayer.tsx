@@ -68,6 +68,144 @@ export default function SpeechPlayer({ reading, language }: SpeechPlayerProps) {
   const [totalTime, setTotalTime] = useState(0);
   const currentWordIndexRef = useRef(0);
 
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setElapsedTime((prev) => {
+          if (prev >= totalTime && totalTime > 0) return prev;
+          return prev + 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying, totalTime]);
+
+  const wakeLockRef = useRef<any>(null);
+
+  const requestWakeLock = async () => {
+    if (typeof window === "undefined" || !("wakeLock" in navigator)) return;
+    try {
+      // Re-release first to be clean
+      if (wakeLockRef.current) {
+        await wakeLockRef.current.release();
+        wakeLockRef.current = null;
+      }
+      wakeLockRef.current = await (navigator as any).wakeLock.request("screen");
+    } catch (err) {
+      console.warn("Screen Wake Lock request failed:", err);
+    }
+  };
+
+  const releaseWakeLock = async () => {
+    if (wakeLockRef.current) {
+      try {
+        await wakeLockRef.current.release();
+        wakeLockRef.current = null;
+      } catch (err) {
+        console.warn("Screen Wake Lock release failed:", err);
+      }
+    }
+  };
+
+  // Manage Screen Wake Lock based on isPlaying state
+  useEffect(() => {
+    if (isPlaying) {
+      requestWakeLock();
+    } else {
+      releaseWakeLock();
+    }
+    return () => {
+      releaseWakeLock();
+    };
+  }, [isPlaying]);
+
+  // Re-acquire Screen Wake Lock when tab becomes visible again
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === "visible" && isPlaying) {
+        await requestWakeLock();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isPlaying]);
+
+
+
+  // Sync state with lock screen Media Session API
+  useEffect(() => {
+    if (typeof window === "undefined" || !("mediaSession" in navigator)) return;
+
+    if (isPlaying) {
+      navigator.mediaSession.playbackState = "playing";
+      
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: "Daily Astrology Reading",
+        artist: "AstroApp",
+        album: `${language} Reading`,
+        artwork: [
+          { src: "/favicon.ico", sizes: "32x32", type: "image/x-icon" },
+        ],
+      });
+
+      if ("setPositionState" in navigator.mediaSession) {
+        try {
+          navigator.mediaSession.setPositionState({
+            duration: totalTime || 1,
+            playbackRate: 1.0,
+            position: Math.min(elapsedTime, totalTime),
+          });
+        } catch (e) {
+          console.warn("Failed to set MediaSession position state:", e);
+        }
+      }
+    } else {
+      navigator.mediaSession.playbackState = "paused";
+    }
+  }, [isPlaying, language, elapsedTime, totalTime]);
+
+  // Set up lock screen controls (Media Session Actions)
+  useEffect(() => {
+    if (typeof window === "undefined" || !("mediaSession" in navigator)) return;
+
+    navigator.mediaSession.setActionHandler("play", () => {
+      const fullText = getFullText();
+      const totalWords = fullText.split(/\s+/).length;
+      const targetWordIndex = Math.floor((elapsedTime / (totalTime || 1)) * totalWords) || 0;
+      startSpeech(targetWordIndex);
+    });
+
+    navigator.mediaSession.setActionHandler("pause", () => {
+      window.speechSynthesis.cancel();
+      setIsPlaying(false);
+    });
+
+    navigator.mediaSession.setActionHandler("stop", () => {
+      stopSpeech();
+    });
+
+    navigator.mediaSession.setActionHandler("seekbackward", () => {
+      handleSeek(-10);
+    });
+
+    navigator.mediaSession.setActionHandler("seekforward", () => {
+      handleSeek(10);
+    });
+
+    return () => {
+      if ("mediaSession" in navigator) {
+        navigator.mediaSession.setActionHandler("play", null);
+        navigator.mediaSession.setActionHandler("pause", null);
+        navigator.mediaSession.setActionHandler("stop", null);
+        navigator.mediaSession.setActionHandler("seekbackward", null);
+        navigator.mediaSession.setActionHandler("seekforward", null);
+      }
+    };
+  }, [elapsedTime, totalTime, reading, language]);
+
   const getFullText = () => {
     if (!reading) return "";
     const contents = [
@@ -105,9 +243,6 @@ export default function SpeechPlayer({ reading, language }: SpeechPlayerProps) {
       const fullText = getFullText();
       const totalWords = fullText.split(/\s+/).length;
 
-      const estimatedTotalSeconds = Math.ceil((totalWords / 140) * 60);
-      setTotalTime(estimatedTotalSeconds);
-
       const chunks = fullText
         .split(/([.!?।]+)/g)
         .reduce((acc: string[], curr, i) => {
@@ -116,6 +251,15 @@ export default function SpeechPlayer({ reading, language }: SpeechPlayerProps) {
           return acc;
         }, [])
         .filter((s) => s.trim().length > 0);
+
+      const isEnglish = language === "English";
+      // English target rate: 120 wpm. Non-English (Hindi/Malayalam/Tamil) target rate: 90 wpm.
+      const wordsPerMinute = isEnglish ? 120 : 90;
+      const speakingTimeSeconds = (totalWords / wordsPerMinute) * 60;
+      const pauseOverheadSeconds = chunks.length * 0.6; // 0.6s sentence-to-sentence transition delay
+
+      const estimatedTotalSeconds = Math.ceil(speakingTimeSeconds + pauseOverheadSeconds);
+      setTotalTime(estimatedTotalSeconds);
 
       const langCode = getLanguageCode(language);
       const allVoices = window.speechSynthesis.getVoices();
@@ -144,6 +288,12 @@ export default function SpeechPlayer({ reading, language }: SpeechPlayerProps) {
         accumulatedWords += chunkWords;
       }
 
+      const initialElapsed = Math.min(
+        Math.ceil((wordsReadBeforeCurrentChunk / totalWords) * estimatedTotalSeconds),
+        estimatedTotalSeconds
+      );
+      setElapsedTime(initialElapsed);
+
       const speakNextChunk = () => {
         if (currentChunkIndex >= chunks.length) {
           setIsPlaying(false);
@@ -167,17 +317,21 @@ export default function SpeechPlayer({ reading, language }: SpeechPlayerProps) {
             const totalWordsRead =
               wordsReadBeforeCurrentChunk + wordsInCurrentChunkRead;
             currentWordIndexRef.current = totalWordsRead;
-
-            const currentElapsed = Math.min(
-              Math.ceil((totalWordsRead / totalWords) * estimatedTotalSeconds),
-              estimatedTotalSeconds,
-            );
-            setElapsedTime(currentElapsed);
+            // Removed setElapsedTime here as Android Chrome often fails to fire this.
+            // It is handled by setInterval and synced in onend.
           }
         };
 
         utterance.onend = () => {
           wordsReadBeforeCurrentChunk += chunkText.split(/\s+/).length;
+          
+          // Sync logical time when chunk ends
+          const logicalElapsed = Math.min(
+            Math.ceil((wordsReadBeforeCurrentChunk / totalWords) * estimatedTotalSeconds),
+            estimatedTotalSeconds
+          );
+          setElapsedTime((prev) => Math.max(prev, logicalElapsed));
+
           currentChunkIndex++;
           speakNextChunk();
         };
@@ -313,6 +467,16 @@ export default function SpeechPlayer({ reading, language }: SpeechPlayerProps) {
           </div>
         </div>
       </div>
+      {isPlaying && (
+        <video
+          src="data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAr9tZGF0AAACoAYF//+///AAAAMmF2Y0MBZAAK/+EAGWdkAAqs2V+WXAWyAAADAAIAAAMAYB4kSywBAAZo6+PLIsAAAAAYc3R0cwAAAAAAAAABAAAAAQAAAgAAAAAcc3RzYwAAAAAAAAABAAAAAQAAAAEAAAABAAAAFHN0c3oAAAAAAAACtwAAAAEAAAAUc3RjbwAAAAAAAAABAAAAMAAAAGJ1ZHRhAAAAWm1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALWlsc3QAAAAlqXRvbwAAAB1kYXRhAAAAAQAAAABMYXZmNTQuNjMuMTA0"
+          loop
+          muted
+          playsInline
+          autoPlay
+          className="absolute opacity-0 w-1 h-1 pointer-events-none"
+        />
+      )}
     </motion.div>
   );
 }
