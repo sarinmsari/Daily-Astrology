@@ -82,6 +82,57 @@ export default function SpeechPlayer({ reading, language }: SpeechPlayerProps) {
   }, [isPlaying, totalTime]);
 
   const silentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const wakeLockRef = useRef<any>(null);
+
+  const requestWakeLock = async () => {
+    if (typeof window === "undefined" || !("wakeLock" in navigator)) return;
+    try {
+      // Re-release first to be clean
+      if (wakeLockRef.current) {
+        await wakeLockRef.current.release();
+        wakeLockRef.current = null;
+      }
+      wakeLockRef.current = await (navigator as any).wakeLock.request("screen");
+    } catch (err) {
+      console.warn("Screen Wake Lock request failed:", err);
+    }
+  };
+
+  const releaseWakeLock = async () => {
+    if (wakeLockRef.current) {
+      try {
+        await wakeLockRef.current.release();
+        wakeLockRef.current = null;
+      } catch (err) {
+        console.warn("Screen Wake Lock release failed:", err);
+      }
+    }
+  };
+
+  // Manage Screen Wake Lock based on isPlaying state
+  useEffect(() => {
+    if (isPlaying) {
+      requestWakeLock();
+    } else {
+      releaseWakeLock();
+    }
+    return () => {
+      releaseWakeLock();
+    };
+  }, [isPlaying]);
+
+  // Re-acquire Screen Wake Lock when tab becomes visible again
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === "visible" && isPlaying) {
+        await requestWakeLock();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isPlaying]);
 
   // Initialize a silent loop audio file to prevent background suspension on mobile
   useEffect(() => {
@@ -434,6 +485,16 @@ export default function SpeechPlayer({ reading, language }: SpeechPlayerProps) {
           </div>
         </div>
       </div>
+      {isPlaying && (
+        <video
+          src="data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAr9tZGF0AAACoAYF//+///AAAAMmF2Y0MBZAAK/+EAGWdkAAqs2V+WXAWyAAADAAIAAAMAYB4kSywBAAZo6+PLIsAAAAAYc3R0cwAAAAAAAAABAAAAAQAAAgAAAAAcc3RzYwAAAAAAAAABAAAAAQAAAAEAAAABAAAAFHN0c3oAAAAAAAACtwAAAAEAAAAUc3RjbwAAAAAAAAABAAAAMAAAAGJ1ZHRhAAAAWm1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALWlsc3QAAAAlqXRvbwAAAB1kYXRhAAAAAQAAAABMYXZmNTQuNjMuMTA0"
+          loop
+          muted
+          playsInline
+          autoPlay
+          className="absolute opacity-0 w-1 h-1 pointer-events-none"
+        />
+      )}
     </motion.div>
   );
 }
