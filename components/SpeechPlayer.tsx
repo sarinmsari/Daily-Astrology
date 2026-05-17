@@ -81,7 +81,6 @@ export default function SpeechPlayer({ reading, language }: SpeechPlayerProps) {
     return () => clearInterval(interval);
   }, [isPlaying, totalTime]);
 
-  const silentAudioRef = useRef<HTMLAudioElement | null>(null);
   const wakeLockRef = useRef<any>(null);
 
   const requestWakeLock = async () => {
@@ -134,20 +133,7 @@ export default function SpeechPlayer({ reading, language }: SpeechPlayerProps) {
     };
   }, [isPlaying]);
 
-  // Initialize a silent loop audio file to prevent background suspension on mobile
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      silentAudioRef.current = new Audio(
-        "data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBIAAAABAAEAQB8AAEAfAAABAAgAAABmYWN0BAAAAAAAAABkYXRhAAAAAA=="
-      );
-      silentAudioRef.current.loop = true;
-    }
-    return () => {
-      if (silentAudioRef.current) {
-        silentAudioRef.current.pause();
-      }
-    };
-  }, []);
+
 
   // Sync state with lock screen Media Session API
   useEffect(() => {
@@ -195,7 +181,6 @@ export default function SpeechPlayer({ reading, language }: SpeechPlayerProps) {
     navigator.mediaSession.setActionHandler("pause", () => {
       window.speechSynthesis.cancel();
       setIsPlaying(false);
-      silentAudioRef.current?.pause();
     });
 
     navigator.mediaSession.setActionHandler("stop", () => {
@@ -247,10 +232,6 @@ export default function SpeechPlayer({ reading, language }: SpeechPlayerProps) {
     setProgress(0);
     setElapsedTime(0);
     currentWordIndexRef.current = 0;
-    silentAudioRef.current?.pause();
-    if (silentAudioRef.current) {
-      silentAudioRef.current.currentTime = 0;
-    }
   };
 
   const startSpeech = (startWordIndex = 0) => {
@@ -262,9 +243,6 @@ export default function SpeechPlayer({ reading, language }: SpeechPlayerProps) {
       const fullText = getFullText();
       const totalWords = fullText.split(/\s+/).length;
 
-      const estimatedTotalSeconds = Math.ceil((totalWords / 140) * 60);
-      setTotalTime(estimatedTotalSeconds);
-
       const chunks = fullText
         .split(/([.!?।]+)/g)
         .reduce((acc: string[], curr, i) => {
@@ -273,6 +251,15 @@ export default function SpeechPlayer({ reading, language }: SpeechPlayerProps) {
           return acc;
         }, [])
         .filter((s) => s.trim().length > 0);
+
+      const isEnglish = language === "English";
+      // English target rate: 120 wpm. Non-English (Hindi/Malayalam/Tamil) target rate: 90 wpm.
+      const wordsPerMinute = isEnglish ? 120 : 90;
+      const speakingTimeSeconds = (totalWords / wordsPerMinute) * 60;
+      const pauseOverheadSeconds = chunks.length * 0.6; // 0.6s sentence-to-sentence transition delay
+
+      const estimatedTotalSeconds = Math.ceil(speakingTimeSeconds + pauseOverheadSeconds);
+      setTotalTime(estimatedTotalSeconds);
 
       const langCode = getLanguageCode(language);
       const allVoices = window.speechSynthesis.getVoices();
@@ -360,11 +347,6 @@ export default function SpeechPlayer({ reading, language }: SpeechPlayerProps) {
       };
 
       setIsPlaying(true);
-      silentAudioRef.current?.play().catch((err) => {
-        if (err.name !== "AbortError") {
-          console.error("Silent audio autoplay prevented:", err);
-        }
-      });
       speakNextChunk();
     }, 100);
   };
