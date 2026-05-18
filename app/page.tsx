@@ -13,8 +13,73 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { triggerHaptic } from "@/lib/haptics";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export default function LandingPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
+  useEffect(() => {
+    if (!loading && user) {
+      const checkProfile = async () => {
+        setIsRedirecting(true);
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            if (data.birth_star_nakshatra) {
+              router.push(
+                `/reading?uid=${encodeURIComponent(user.uid)}&nakshatra=${encodeURIComponent(data.birth_star_nakshatra)}&pada=${data.nakshatra_pada || 1}&nakshatraIndex=${data.nakshatra_index ?? 0}&name=${encodeURIComponent(data.full_name || user.displayName || "Soul")}&birthDate=${data.birth_date || ""}&birthTime=${data.birth_time || ""}&lat=${data.latitude ?? ""}&lng=${data.longitude ?? ""}&language=${data.language || "English"}`
+              );
+              return;
+            }
+          }
+        } catch (err) {
+          console.error("Error checking profile:", err);
+        } finally {
+          setIsRedirecting(false);
+        }
+      };
+      checkProfile();
+    }
+  }, [user, loading, router]);
+
+  if (loading || isRedirecting) {
+    return (
+      <main className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center relative overflow-hidden">
+        {/* Background Orbs */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-accent/5 blur-[120px] rounded-full" />
+          <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-accent/5 blur-[120px] rounded-full" />
+        </div>
+
+        <div className="flex flex-col items-center justify-center space-y-6 relative z-10">
+          <motion.div
+            animate={{ scale: [1, 1.1, 1], rotate: 360 }}
+            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+            className="text-accent/30"
+          >
+            <Stars className="w-16 h-16 animate-pulse" />
+          </motion.div>
+
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0.4, 0.8, 0.4] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            className="text-accent font-serif text-sm tracking-[0.3em] uppercase text-center px-6"
+          >
+            Aligning with the cosmos...
+          </motion.p>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-background text-foreground overflow-hidden">
       {/* Background Orbs */}

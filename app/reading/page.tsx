@@ -29,6 +29,7 @@ import {
   OracleAdvice,
 } from "@/components/AstroReadingComponents";
 import InstallAppButton from "@/components/InstallAppButton";
+import PushReminderButton from "@/components/PushReminderButton";
 import SpeechPlayer from "@/components/SpeechPlayer";
 
 const ReadingSchema = z.object({
@@ -444,6 +445,8 @@ function ReadingContent() {
               </button>
             </motion.div>
           )}
+
+          {!isLoading && <PushReminderButton uid={uid} />}
 
           {!isLoading && <InstallAppButton />}
 
