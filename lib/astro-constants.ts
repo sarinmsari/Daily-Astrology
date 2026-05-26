@@ -135,14 +135,29 @@ export const PLANET_DIGNITY_TABLE: Record<string, PlanetDignityDef> = {
 
 /**
  * Computes the dignity of a planet in a given rashi (by index).
+ * Pass `longitude` (0–360 sidereal) to get degree-accurate Moolatrikona
+ * vs Own Sign for the Sun (0°–20° Leo = Moolatrikona; 20°–30° = Own Sign)
+ * and Moon (0°–3° Cancer = Moolatrikona; 3°–30° = Own Sign).
  * All inputs are computed from the live ephemeris — nothing is hardcoded.
  */
-export function computeDignity(planetName: string, rashiIndex: number): string {
+export function computeDignity(
+  planetName: string,
+  rashiIndex: number,
+  longitude?: number,
+): string {
   const def = PLANET_DIGNITY_TABLE[planetName];
   if (!def) return ""; // Rahu, Ketu, Ascendant have no standard dignity
   if (rashiIndex === def.exaltation) return "Exalted (Uccha)";
   if (rashiIndex === def.debilitation) return "Debilitated (Neecha)";
-  if (def.moolatrikona.includes(rashiIndex)) return "Moolatrikona";
+  if (def.moolatrikona.includes(rashiIndex)) {
+    // Degree-aware split for Sun and Moon when longitude is available
+    if (longitude !== undefined) {
+      const degInSign = longitude % 30;
+      if (planetName === "Sun" && degInSign >= 20) return "Own Sign (Swa)";  // Leo 20°–30°
+      if (planetName === "Moon" && degInSign >= 3)  return "Own Sign (Swa)";  // Cancer 3°–30°
+    }
+    return "Moolatrikona";
+  }
   if (def.ownSign.includes(rashiIndex)) return "Own Sign (Swa)";
   return "Neutral";
 }
@@ -239,14 +254,19 @@ export function computeShaniTransitPhase(
 }
 
 // ─── Nakshatra Info ───────────────────────────────────────────────────────────
+// Each nakshatra spans exactly 360°/27 = 13°20'. Using integer division (360/27)
+// avoids floating-point accumulation that can drift at exact pada boundaries.
+const NAKSHATRA_SPAN = 360 / 27;   // 13.333...°
+const PADA_SPAN      = NAKSHATRA_SPAN / 4; // 3.333...°
+
 export const getNakshatraInfo = (moonLongitude: number) => {
-  const nakshatraIndex = Math.floor(moonLongitude / (13 + 20 / 60));
-  const remainder = moonLongitude % (13 + 20 / 60);
-  const pada = Math.floor(remainder / (3 + 20 / 60)) + 1;
+  const nakshatraIndex = Math.floor(moonLongitude / NAKSHATRA_SPAN);
+  const remainder      = moonLongitude % NAKSHATRA_SPAN;
+  const pada           = Math.min(Math.floor(remainder / PADA_SPAN) + 1, 4);
 
   return {
-    name: NAKSHATRAS[nakshatraIndex],
+    name:  NAKSHATRAS[nakshatraIndex],
     index: nakshatraIndex,
-    pada: Math.min(pada, 4),
+    pada,
   };
 };

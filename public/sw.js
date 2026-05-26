@@ -45,14 +45,24 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // If window is already open, focus it and redirect
+      // If an app window is already open, focus it.
+      // We do NOT call client.navigate() here because on many mobile browsers
+      // focus() returns a base Client (not WindowClient), which has no .navigate() method —
+      // causing a silent crash that prevents any navigation from happening.
       for (let i = 0; i < windowClients.length; i++) {
         const client = windowClients[i];
         if (client.url.includes(self.location.origin) && 'focus' in client) {
-          return client.focus().then((focusedClient) => focusedClient.navigate(destinationUrl));
+          return client.focus().then((focusedClient) => {
+            // Only navigate if the method is actually available (WindowClient).
+            if (focusedClient && typeof focusedClient.navigate === 'function') {
+              return focusedClient.navigate(destinationUrl);
+            }
+            // Fallback: open a fresh window to the destination.
+            return clients.openWindow(destinationUrl);
+          });
         }
       }
-      // Otherwise, open a new window
+      // No window open — open a new one.
       if (clients.openWindow) {
         return clients.openWindow(destinationUrl);
       }

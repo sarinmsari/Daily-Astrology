@@ -30,6 +30,32 @@ const astroMutex = new Mutex();
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+export type MoonDayTransit = {
+  /** Moon position at 00:00 IST (start of day) */
+  startOfDay: {
+    longitude: number;
+    rashi: string;
+    rashiIndex: number;
+    nakshatra: string;
+    nakshatraIndex: number;
+    pada: number;
+  };
+  /** Moon position at 23:59 IST (end of day) */
+  endOfDay: {
+    longitude: number;
+    rashi: string;
+    rashiIndex: number;
+    nakshatra: string;
+    nakshatraIndex: number;
+    pada: number;
+  };
+  /** True when Moon crosses into a new Nakshatra during this calendar day */
+  nakshatraChanges: boolean;
+  /** True when Moon crosses into a new Rashi during this calendar day */
+  rashiChanges: boolean;
+  /** Approximate UTC time of the Nakshatra/Rashi boundary crossing (if any) */
+  transitionTimeISO: string | null;
+};
 
 export type PlanetPosition = {
   name: string;
@@ -97,6 +123,103 @@ export const calculateBirthStar = async (
   }
 };
 
+// ─── Moon Day Transit ─────────────────────────────────────────────────────────
+/**
+ * For a given IST calendar date, computes Moon's position at the very start
+ * (00:00 IST) and very end (23:59 IST) of that day.
+ *
+ * If the Moon crosses a Nakshatra or Rashi boundary during the day, the
+ * function binary-searches for the approximate crossing time so the reading
+ * can describe the full-day lunar energy accurately.
+ *
+ * @param dateISO - "YYYY-MM-DD" in IST (e.g. "2026-05-26")
+ */
+export const calculateMoonDayTransit = async (
+  dateISO: string
+): Promise<MoonDayTransit> => {
+  const unlock = await astroMutex.lock();
+  const swe = new SwissEph();
+  try {
+    await swe.initSwissEph();
+    swe.set_sid_mode(swe.SE_SIDM_LAHIRI, 0, 0);
+    const flags = swe.SEFLG_SWIEPH | swe.SEFLG_SIDEREAL;
+
+    const getMoonAt = (isoWithOffset: string) => {
+      const d = new Date(isoWithOffset);
+      const jd = swe.julday(
+        d.getUTCFullYear(),
+        d.getUTCMonth() + 1,
+        d.getUTCDate(),
+        d.getUTCHours() + d.getUTCMinutes() / 60 + d.getUTCSeconds() / 3600
+      );
+      const res = swe.calc_ut(jd, swe.SE_MOON, flags);
+      const longitude = res[0];
+      const rashiIndex = Math.floor(longitude / 30);
+      const nakshatraSpan = 360 / 27;
+      const nakshatraIndex = Math.floor(longitude / nakshatraSpan);
+      const remainder = longitude % nakshatraSpan;
+      const pada = Math.min(Math.floor(remainder / (nakshatraSpan / 4)) + 1, 4);
+      return { longitude, rashiIndex, nakshatraIndex, pada };
+    };
+
+    const start = getMoonAt(`${dateISO}T00:00:00+05:30`);
+    const end   = getMoonAt(`${dateISO}T23:59:00+05:30`);
+
+    const nakshatraChanges = start.nakshatraIndex !== end.nakshatraIndex;
+    const rashiChanges     = start.rashiIndex !== end.rashiIndex;
+
+    // ── Binary search for transition time (only if a boundary crossing exists) ──
+    let transitionTimeISO: string | null = null;
+    if (nakshatraChanges || rashiChanges) {
+      let loMs = new Date(`${dateISO}T00:00:00+05:30`).getTime();
+      let hiMs = new Date(`${dateISO}T23:59:00+05:30`).getTime();
+      const startBucket = nakshatraChanges ? start.nakshatraIndex : start.rashiIndex;
+      for (let i = 0; i < 18; i++) {
+        const midMs = Math.floor((loMs + hiMs) / 2);
+        const mid = new Date(midMs);
+        const midISO = mid.toISOString();
+        const midMoon = getMoonAt(midISO);
+        const midBucket = nakshatraChanges ? midMoon.nakshatraIndex : midMoon.rashiIndex;
+        if (midBucket === startBucket) {
+          loMs = midMs;
+        } else {
+          hiMs = midMs;
+        }
+      }
+      transitionTimeISO = new Date(Math.floor((loMs + hiMs) / 2)).toISOString();
+    }
+
+    // getNakshatraInfo and RASHIS are statically imported at the top of this file
+    const startNak = getNakshatraInfo(start.longitude);
+    const endNak   = getNakshatraInfo(end.longitude);
+
+    return {
+      startOfDay: {
+        longitude:      start.longitude,
+        rashi:          RASHIS[start.rashiIndex],
+        rashiIndex:     start.rashiIndex,
+        nakshatra:      startNak.name,
+        nakshatraIndex: startNak.index,
+        pada:           startNak.pada,
+      },
+      endOfDay: {
+        longitude:      end.longitude,
+        rashi:          RASHIS[end.rashiIndex],
+        rashiIndex:     end.rashiIndex,
+        nakshatra:      endNak.name,
+        nakshatraIndex: endNak.index,
+        pada:           endNak.pada,
+      },
+      nakshatraChanges,
+      rashiChanges,
+      transitionTimeISO,
+    };
+  } finally {
+    swe.close();
+    unlock();
+  }
+};
+
 // ─── Full Chart ───────────────────────────────────────────────────────────────
 
 export const calculateFullChart = async (
@@ -142,7 +265,7 @@ export const calculateFullChart = async (
         longitude,
         rashi: RASHIS[rashiIndex],
         rashiIndex,
-        ...(withDignity ? { dignity: computeDignity(p.name, rashiIndex) } : {}),
+        ...(withDignity ? { dignity: computeDignity(p.name, rashiIndex, longitude) } : {}),
       };
     });
 
@@ -203,7 +326,7 @@ export function getDerivedFacts(
 
   // ── Natal planet dignities (computed from ephemeris-derived rashi indices) ──
   const planetDignitySummary = natalChart.positions.map((p) => {
-    const dignity = computeDignity(p.name, p.rashiIndex);
+    const dignity = computeDignity(p.name, p.rashiIndex, p.longitude);
     return dignity
       ? `${p.name}: ${p.rashi} — ${dignity}`
       : `${p.name}: ${p.rashi}`; // Rahu/Ketu get no dignity label
