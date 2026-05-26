@@ -1,4 +1,4 @@
-import { calculateFullChart, getDerivedFacts } from "@/lib/astro";
+import { calculateFullChart, calculateMoonDayTransit, getDerivedFacts } from "@/lib/astro";
 import { adminDb } from "@/lib/firebase-admin";
 
 /**
@@ -15,13 +15,18 @@ import { adminDb } from "@/lib/firebase-admin";
  * Falls back to full computation if Firestore lookup fails.
  */
 export async function POST(req: Request) {
-  const { uid, birthDate, birthTime, latitude, longitude, nakshatraIndex, readingDateISO } =
+  const { uid, birthDate, birthTime, latitude, longitude, nakshatraIndex, readingDateISO: readingDateISOParam } =
     await req.json();
 
-  // Resolve the reading date (any date, not hardcoded)
-  const readingDate = readingDateISO
-    ? new Date(`${readingDateISO}T12:00:00+05:30`)
-    : new Date();
+  // Resolve the reading date — anchor to start of day (00:00 IST) for a
+  // whole-day transit reading. The Moon's full-day arc is captured separately
+  // by calculateMoonDayTransit below.
+  const readingDateISO = readingDateISOParam
+    ?? new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
+
+  // Transit chart is computed at 00:00 IST — correct for all slow planets.
+  // Moon's full-day movement is handled by calculateMoonDayTransit.
+  const readingDate = new Date(`${readingDateISO}T00:00:00+05:30`);
 
   let natalChart: Awaited<ReturnType<typeof calculateFullChart>> | null = null;
   let resolvedNakshatraIndex: number = nakshatraIndex ?? 0;
@@ -52,17 +57,24 @@ export async function POST(req: Request) {
   // ── Step 2: Recompute natal chart only if Firestore miss ────────────────────
   const needsNatalCompute = !natalChart;
 
-  const transitPromise = calculateFullChart(readingDate, 28.61, 77.2, false);
+  const transitPromise = calculateFullChart(readingDate, latitude ?? 28.61, longitude ?? 77.2, false);
+  const moonDayTransitPromise = calculateMoonDayTransit(readingDateISO);
   const natalPromise = needsNatalCompute
     ? calculateFullChart(
-        new Date(`${birthDate}T${birthTime || "12:00"}:00`),
+        // +05:30 matches how onboarding/actions.ts constructs the birth datetime.
+        // Without the offset, JS parses the string as UTC — 5h 30m too early.
+        new Date(`${birthDate}T${birthTime || "12:00"}:00+05:30`),
         latitude ?? 12.97,
         longitude ?? 77.59,
         true
       )
     : Promise.resolve(null);
 
-  const [transitChart, recomputedNatal] = await Promise.all([transitPromise, natalPromise]);
+  const [transitChart, recomputedNatal, moonDayTransit] = await Promise.all([
+    transitPromise,
+    natalPromise,
+    moonDayTransitPromise,
+  ]);
 
   if (recomputedNatal) {
     natalChart = recomputedNatal;
@@ -70,5 +82,5 @@ export async function POST(req: Request) {
 
   const derived = getDerivedFacts(natalChart!, transitChart, resolvedNakshatraIndex);
 
-  return Response.json({ natalChart, transitChart, derived });
+  return Response.json({ natalChart, transitChart, derived, moonDayTransit });
 }

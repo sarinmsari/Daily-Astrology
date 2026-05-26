@@ -187,6 +187,7 @@ function ReadingContent() {
             natalChart: chartData.natalChart,
             transitChart: chartData.transitChart,
             derived: chartData.derived,
+            moonDayTransit: chartData.moonDayTransit,
           });
         } catch (err: any) {
           setIsComputingChart(false);

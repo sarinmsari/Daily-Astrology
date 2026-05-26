@@ -44,6 +44,7 @@ export async function POST(req: Request) {
     natalChart,
     transitChart,
     derived,
+    moonDayTransit,
   } = await req.json();
 
   // ── Age is not critical to re-compute here; derived context is sufficient ──
@@ -97,6 +98,19 @@ ${transitChart.positions
         : ""),
   )
   .join("\n")}
+
+═══════════════════════════════════════════════════════════════
+MOON'S FULL-DAY ARC (${currentDate})
+All positions from Swiss Ephemeris — covers the entire IST calendar day.
+═════════════════════════════════════════════════════════════
+${moonDayTransit
+  ? moonDayTransit.nakshatraChanges || moonDayTransit.rashiChanges
+    ? `Moon begins the day in ${moonDayTransit.startOfDay.nakshatra} (${moonDayTransit.startOfDay.rashi}), Pada ${moonDayTransit.startOfDay.pada}.
+Moon transitions to ${moonDayTransit.endOfDay.nakshatra} (${moonDayTransit.endOfDay.rashi}), Pada ${moonDayTransit.endOfDay.pada} at approx. ${new Date(moonDayTransit.transitionTimeISO).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata", hour12: true })} IST.
+The reading must reflect BOTH lunar energies: the morning tone (${moonDayTransit.startOfDay.nakshatra}) and the afternoon/evening shift (${moonDayTransit.endOfDay.nakshatra}).`
+    : `Moon remains in ${moonDayTransit.startOfDay.nakshatra} (${moonDayTransit.startOfDay.rashi}), Pada ${moonDayTransit.startOfDay.pada} throughout the entire day. Single unified lunar energy.`
+  : `Transit Moon: ${derived.transitMoonRashi} — ${derived.moonHouseFromNatal}th from natal Moon.`
+}
 
 ═══════════════════════════════════════════════════════════════
 VERIFIED VEDIC ANALYSIS (Pre-computed — DO NOT contradict)
