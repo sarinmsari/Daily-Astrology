@@ -8,7 +8,7 @@ admin.initializeApp();
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 exports.dailyAstroReading = functions.pubsub
-  .schedule("0 7 * * *") // Every day at 7 AM
+  .schedule("30 1 * * *") // 01:30 UTC = 07:00 AM IST (matches Vercel cron + UI promise)
   .onRun(async (context) => {
     const usersSnapshot = await admin.firestore().collection("users").get();
     

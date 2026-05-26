@@ -27,7 +27,11 @@ export async function sendDailyReminder(subscription: any, userName: string) {
   });
 
   try {
-    await webpush.sendNotification(subscription, payload);
+    await webpush.sendNotification(subscription, payload, {
+      urgency: "normal",  // Required hint for mobile push services; without this, low-power
+                          // mode on iOS/Android may silently discard the notification.
+      TTL: 86400,         // Retry delivery for up to 24 hours if the device is offline.
+    });
     return { success: true };
   } catch (error: any) {
     // 410 (Gone) or 404 (Not Found) means the user revoked permissions or the subscription expired
